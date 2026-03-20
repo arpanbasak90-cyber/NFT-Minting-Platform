@@ -148,7 +148,9 @@ stellar contract invoke \
 ## 👨‍💻 Author
 
 Arpan Basak
+
 gmail: arpanbasak90@gmail.com
+
 GitHub: https://github.com/arpanbasak90-cyber
 
 ---
