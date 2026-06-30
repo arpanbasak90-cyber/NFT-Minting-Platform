@@ -72,3 +72,4 @@ impl NFTContract {
         storage.get(token_id).expect("NFT not found")
     }
 }
+mod test;
