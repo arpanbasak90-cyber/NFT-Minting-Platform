@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stellar NFT Minting Platform</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Background Elements -->
+    <div class="mesh-bg"></div>
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+
+    <header class="navbar">
+        <div class="logo">
+            <i class="fa-solid fa-cube text-gradient"></i>
+            <span>Stellar<span class="weight-light">Mint</span></span>
+        </div>
+        <div class="nav-controls">
+            <span class="network-badge"><span class="dot"></span> Testnet</span>
+            <button id="connectWalletBtn" class="btn btn-primary btn-glow">
+                <i class="fa-solid fa-wallet"></i>
+                <span id="walletStatusText">Connect Freighter</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Hero Section -->
+        <section class="hero animate-fade-in">
+            <h1 class="hero-title">Mint & Manage Unique <span class="text-gradient">Stellar NFTs</span></h1>
+            <p class="hero-subtitle">Deploy, query, and transfer secure digital assets powered by Soroban Smart Contracts.</p>
+        </section>
+
+        <!-- Main Dashboard Layout -->
+        <div class="dashboard-grid">
+            
+            <!-- Minting Card -->
+            <div class="card card-glow animate-slide-up" style="animation-delay: 0.1s;">
+                <div class="card-header">
+                    <div class="card-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                    <h2>Mint New NFT</h2>
+                </div>
+                <form id="mintForm">
+                    <div class="form-group">
+                        <label for="nftName">Asset Name</label>
+                        <input type="text" id="nftName" placeholder="e.g. Astro Kitty #001" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="tokenId">Token ID (Numeric)</label>
+                        <input type="number" id="tokenId" placeholder="e.g. 1337" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="nftMetadata">Metadata Hash (SHA-256 Hex)</label>
+                        <input type="text" id="nftMetadata" placeholder="e.g. e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" pattern="[a-fA-F0-9]{64}" title="Please enter a valid 64-character SHA-256 hex string" required>
+                    </div>
+                    <button type="submit" id="mintBtn" class="btn btn-secondary btn-full">
+                        <i class="fa-solid fa-hammer"></i> Mint NFT
+                    </button>
+                </form>
+            </div>
+
+            <!-- Transfer Card -->
+            <div class="card card-glow animate-slide-up" style="animation-delay: 0.2s;">
+                <div class="card-header">
+                    <div class="card-icon"><i class="fa-solid fa-arrow-right-arrow-left"></i></div>
+                    <h2>Transfer Ownership</h2>
+                </div>
+                <form id="transferForm">
+                    <div class="form-group">
+                        <label for="transferTokenId">Token ID</label>
+                        <input type="number" id="transferTokenId" placeholder="e.g. 1337" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="receiverAddress">Recipient Public Key</label>
+                        <input type="text" id="receiverAddress" placeholder="e.g. G..." pattern="G[A-D2-7][A-Z2-7]{54}" title="Please enter a valid Stellar public key starting with G" required>
+                    </div>
+                    <button type="submit" id="transferBtn" class="btn btn-outline btn-full">
+                        <i class="fa-solid fa-paper-plane"></i> Send Asset
+                    </button>
+                </form>
+            </div>
+
+            <!-- Burn / Delete Card -->
+            <div class="card card-glow animate-slide-up" style="animation-delay: 0.3s;">
+                <div class="card-header">
+                    <div class="card-icon icon-danger"><i class="fa-solid fa-fire"></i></div>
+                    <h2>Burn Asset</h2>
+                </div>
+                <form id="burnForm">
+                    <div class="form-group">
+                        <label for="burnTokenId">Token ID to Burn</label>
+                        <input type="number" id="burnTokenId" placeholder="e.g. 1337" min="1" required>
+                    </div>
+                    <button type="submit" id="burnBtn" class="btn btn-danger btn-full">
+                        <i class="fa-solid fa-trash-can"></i> Burn NFT
+                    </button>
+                </form>
+            </div>
+
+            <!-- Query/View NFT Card -->
+            <div class="card card-glow animate-slide-up" style="animation-delay: 0.4s;">
+                <div class="card-header">
+                    <div class="card-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+                    <h2>Lookup NFT Details</h2>
+                </div>
+                <form id="queryForm">
+                    <div class="form-group">
+                        <label for="queryTokenId">Token ID</label>
+                        <div class="input-action-group">
+                            <input type="number" id="queryTokenId" placeholder="e.g. 1337" min="1" required>
+                            <button type="submit" class="btn btn-secondary">Query</button>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Search Result Container -->
+                <div id="queryResult" class="result-box hidden">
+                    <div class="result-header">
+                        <span id="resName" class="res-title">NFT Name</span>
+                        <span id="resId" class="badge">#1</span>
+                    </div>
+                    <div class="result-body">
+                        <p><strong>Owner:</strong> <span id="resOwner" class="truncate">G...</span> <i class="fa-regular fa-copy copy-btn" title="Copy Address"></i></p>
+                        <p><strong>Metadata Hash:</strong> <span id="resMeta" class="truncate">0x...</span> <i class="fa-regular fa-copy copy-btn" title="Copy Metadata"></i></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Registry & Live Status Section -->
+        <section class="live-status animate-fade-in" style="animation-delay: 0.5s;">
+            <div class="section-title-bar">
+                <h2><i class="fa-solid fa-chart-line text-gradient"></i> Registry & Stats</h2>
+                <div class="total-stats">Total Supply: <span id="totalSupplyVal">0</span> NFTs</div>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>NFT Contract ID</h3>
+                    <p class="truncate" id="contractIdText">CDVCJKX6FJFOOQ76BJ365SJS6OTGH2ZQF6QVJO5YGGR37QBJ3I2QB7PZ</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Latest Minted NFT</h3>
+                    <p id="latestNftText">None minted yet</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Transaction Notification Feed -->
+        <section class="feed-section animate-fade-in" style="animation-delay: 0.6s;">
+            <h2><i class="fa-solid fa-list-check"></i> Transaction Logs</h2>
+            <div id="logsFeed" class="logs-container">
+                <div class="empty-feed">No operations performed yet.</div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <footer class="footer">
+        <p>&copy; 2026 StellarMint Platform. Powered by Soroban & Freighter.</p>
+    </footer>
+
+    <!-- SDK & Logic Scripts -->
+    <script src="app.js"></script>
+</body>
+</html>
