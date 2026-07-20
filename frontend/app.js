@@ -205,21 +205,30 @@ $$('.w-row').forEach(row => {
         showWalletConnecting(type);
 
         if (type === 'freighter') {
-            // ── Real Freighter Extension ───────────────────────────
-            if (typeof window.freighterApi !== 'undefined') {
+            // ── Real Freighter Extension ───────────────────────────────
+            // The extension injects window.freighterApi automatically.
+            // getPublicKey() triggers the extension popup for permission if not yet allowed.
+            const freighterDetected =
+                typeof window.freighterApi !== 'undefined' ||
+                typeof window.freighter    !== 'undefined';
+
+            if (freighterDetected) {
+                const api = window.freighterApi || window.freighter;
                 try {
-                    const isAllowed = await window.freighterApi.isAllowed();
-                    if (!isAllowed) {
-                        await window.freighterApi.requestAccess();
-                    }
-                    const pk = await window.freighterApi.getPublicKey();
+                    // getPublicKey() handles permission request internally
+                    const pk = await api.getPublicKey();
                     if (pk && pk.startsWith('G')) {
                         setConnected(pk, 'Freighter');
                     } else {
-                        showWalletError('Freighter', 'Could not retrieve public key. Please unlock your wallet and try again.');
+                        showWalletError('Freighter', 'No public key returned. Please unlock your Freighter extension and try again.');
                     }
                 } catch (err) {
-                    showWalletError('Freighter', err?.message || 'Connection was rejected or cancelled.');
+                    const msg = err?.message || String(err);
+                    if (msg.toLowerCase().includes('denied') || msg.toLowerCase().includes('reject') || msg.toLowerCase().includes('cancel')) {
+                        showWalletError('Freighter', 'Connection was cancelled. Please approve the connection in Freighter.');
+                    } else {
+                        showWalletError('Freighter', msg || 'Connection failed. Make sure Freighter is unlocked and try again.');
+                    }
                 }
             } else {
                 showInstallGuide('Freighter', 'https://www.freighter.app', 'freighter-install');
