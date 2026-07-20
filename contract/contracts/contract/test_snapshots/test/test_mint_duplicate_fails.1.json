@@ -23,6 +23,9 @@
                 },
                 {
                   "bytes": "0303030303030303030303030303030303030303030303030303030303030303"
+                },
+                {
+                  "string": "CryptoKitty #3"
                 }
               ]
             }
@@ -50,6 +53,66 @@
             "contract_data": {
               "ext": "v0",
               "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+              "key": {
+                "vec": [
+                  {
+                    "symbol": "NFT"
+                  },
+                  {
+                    "u64": "3"
+                  }
+                ]
+              },
+              "durability": "persistent",
+              "val": {
+                "map": [
+                  {
+                    "key": {
+                      "symbol": "metadata"
+                    },
+                    "val": {
+                      "bytes": "0303030303030303030303030303030303030303030303030303030303030303"
+                    }
+                  },
+                  {
+                    "key": {
+                      "symbol": "name"
+                    },
+                    "val": {
+                      "string": "CryptoKitty #3"
+                    }
+                  },
+                  {
+                    "key": {
+                      "symbol": "owner"
+                    },
+                    "val": {
+                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4"
+                    }
+                  },
+                  {
+                    "key": {
+                      "symbol": "token_id"
+                    },
+                    "val": {
+                      "u64": "3"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "ext": "v0"
+        },
+        "live_until": 4095
+      },
+      {
+        "entry": {
+          "last_modified_ledger_seq": 0,
+          "data": {
+            "contract_data": {
+              "ext": "v0",
+              "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
               "key": "ledger_key_contract_instance",
               "durability": "persistent",
               "val": {
@@ -60,44 +123,14 @@
                   "storage": [
                     {
                       "key": {
-                        "symbol": "NFT"
-                      },
-                      "val": {
-                        "map": [
+                        "vec": [
                           {
-                            "key": {
-                              "u64": "3"
-                            },
-                            "val": {
-                              "map": [
-                                {
-                                  "key": {
-                                    "symbol": "metadata"
-                                  },
-                                  "val": {
-                                    "bytes": "0303030303030303030303030303030303030303030303030303030303030303"
-                                  }
-                                },
-                                {
-                                  "key": {
-                                    "symbol": "owner"
-                                  },
-                                  "val": {
-                                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4"
-                                  }
-                                },
-                                {
-                                  "key": {
-                                    "symbol": "token_id"
-                                  },
-                                  "val": {
-                                    "u64": "3"
-                                  }
-                                }
-                              ]
-                            }
+                            "symbol": "TotalSupply"
                           }
                         ]
+                      },
+                      "val": {
+                        "u64": "1"
                       }
                     }
                   ]
