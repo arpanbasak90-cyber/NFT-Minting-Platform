@@ -278,17 +278,39 @@ function showWalletConnecting(type) {
 
 // ── Helper: wait for Freighter to be injected ─────────────────────
 function waitForFreighter(timeoutMs = 4000) {
-    return new Promise((resolve) => {
-        // If already injected, resolve immediately
-        const getApi = () => window.freighterApi || window.freighter;
-        if (getApi()) {
-            resolve(getApi());
+    return new Promise(async (resolve) => {
+        const check = async () => {
+            // 1. Direct window.stellar check (extension injection)
+            if (typeof window.stellar !== 'undefined') {
+                return window.freighterApi || window.stellar;
+            }
+            // 2. Direct window.freighter check
+            if (typeof window.freighter !== 'undefined') {
+                return window.freighter;
+            }
+            // 3. CDN api helper + isConnected() check
+            if (typeof window.freighterApi !== 'undefined') {
+                try {
+                    const connected = await window.freighterApi.isConnected();
+                    if (connected) return window.freighterApi;
+                } catch {
+                    // Ignore errors during check
+                }
+            }
+            return null;
+        };
+
+        // Check immediately
+        const immediate = await check();
+        if (immediate) {
+            resolve(immediate);
             return;
         }
 
+        // Poll if not found immediately
         const startTime = Date.now();
-        const interval = setInterval(() => {
-            const api = getApi();
+        const interval = setInterval(async () => {
+            const api = await check();
             if (api) {
                 clearInterval(interval);
                 resolve(api);
@@ -296,7 +318,7 @@ function waitForFreighter(timeoutMs = 4000) {
                 clearInterval(interval);
                 resolve(null);
             }
-        }, 100);
+        }, 150);
     });
 }
 
