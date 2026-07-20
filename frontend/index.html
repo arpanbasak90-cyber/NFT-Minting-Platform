@@ -3,232 +3,398 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stellar NFT Minting Platform</title>
+    <title>StellarMint — NFT Minting Platform</title>
+    <meta name="description" content="Mint, transfer and manage NFTs on Stellar Soroban blockchain.">
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Albedo Stellar SDK -->
-    <script src="https://albedo.link/albedo.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://albedo.link/albedo.js" defer></script>
 </head>
 <body>
-    <!-- Background Elements -->
-    <div class="mesh-bg"></div>
-    <div class="glow-orb orb-1"></div>
-    <div class="glow-orb orb-2"></div>
 
-    <header class="navbar">
-        <div class="logo">
-            <i class="fa-solid fa-cube text-gradient"></i>
-            <span>Stellar<span class="weight-light">Mint</span></span>
+    <!-- Ambient Background -->
+    <div class="ambient-bg">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+    </div>
+
+    <!-- ── TOP NAV ─────────────────────────────────── -->
+    <header class="topnav" id="topNav">
+        <div class="topnav-left">
+            <div class="logo">
+                <div class="logo-icon"><i class="fa-solid fa-cube"></i></div>
+                <span>Stellar<span class="logo-thin">Mint</span></span>
+            </div>
+            <nav class="nav-tabs" id="navTabs">
+                <a class="nav-tab active" data-page="dashboard" href="#"><i class="fa-solid fa-grid-2"></i> Dashboard</a>
+                <a class="nav-tab" data-page="activity" href="#"><i class="fa-solid fa-wave-square"></i> Activity Feed</a>
+                <a class="nav-tab" data-page="txcenter" href="#"><i class="fa-solid fa-clock-rotate-left"></i> Tx Center</a>
+                <a class="nav-tab" data-page="analytics" href="#"><i class="fa-solid fa-chart-line"></i> Analytics</a>
+                <a class="nav-tab" data-page="settings" href="#"><i class="fa-solid fa-gear"></i> Settings</a>
+            </nav>
         </div>
-        <div class="nav-controls">
-            <span class="network-badge"><span class="dot"></span> Testnet</span>
-            <button id="connectWalletBtn" class="btn btn-primary btn-glow">
+        <div class="topnav-right">
+            <!-- Network Selector -->
+            <div class="network-selector" id="networkSelector">
+                <div class="network-current" id="networkCurrent">
+                    <span class="network-dot testnet"></span>
+                    <span id="networkLabel">Testnet</span>
+                    <i class="fa-solid fa-chevron-down" id="networkChevron"></i>
+                </div>
+                <div class="network-dropdown hidden" id="networkDropdown">
+                    <button class="network-opt active" data-net="testnet">
+                        <span class="network-dot testnet"></span> Testnet
+                    </button>
+                    <button class="network-opt" data-net="mainnet">
+                        <span class="network-dot mainnet"></span> Mainnet
+                    </button>
+                    <button class="network-opt" data-net="local">
+                        <span class="network-dot local"></span> Local
+                    </button>
+                </div>
+            </div>
+
+            <!-- Wallet Button -->
+            <button class="wallet-btn" id="connectWalletBtn">
                 <i class="fa-solid fa-wallet"></i>
                 <span id="walletStatusText">Connect Wallet</span>
+            </button>
+
+            <!-- Disconnect Icon (shown when connected) -->
+            <button class="disconnect-btn hidden" id="disconnectBtn" title="Disconnect Wallet">
+                <i class="fa-solid fa-right-from-bracket"></i>
             </button>
         </div>
     </header>
 
-    <main class="container">
-        <!-- Hero Section -->
-        <section class="hero animate-fade-in">
-            <h1 class="hero-title">Mint & Manage Unique <span class="text-gradient">Stellar NFTs</span></h1>
-            <p class="hero-subtitle">Deploy, query, and transfer secure digital assets powered by Soroban Smart Contracts.</p>
-        </section>
+    <!-- ── PAGES ──────────────────────────────────── -->
+    <main class="main-content">
 
-        <!-- Main Dashboard Layout -->
-        <div class="dashboard-grid">
-            
-            <!-- Minting Card -->
-            <div class="card card-glow animate-slide-up" style="animation-delay: 0.1s;">
-                <div class="card-header">
-                    <div class="card-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
-                    <h2>Mint New NFT</h2>
+        <!-- ── DASHBOARD PAGE ── -->
+        <section class="page active" id="page-dashboard">
+
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">Dashboard</h1>
+                    <p class="page-sub">Mint & manage your Stellar NFTs on Soroban</p>
                 </div>
-                <form id="mintForm">
-                    <div class="form-group">
-                        <label for="nftName">Asset Name</label>
-                        <input type="text" id="nftName" placeholder="e.g. Astro Kitty #001" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="tokenId">Token ID (Numeric)</label>
-                        <input type="number" id="tokenId" placeholder="e.g. 1337" min="1" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="nftMetadata">Metadata Hash (SHA-256 Hex)</label>
-                        <input type="text" id="nftMetadata" placeholder="e.g. e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" pattern="[a-fA-F0-9]{64}" title="Please enter a valid 64-character SHA-256 hex string" required>
-                    </div>
-                    <button type="submit" id="mintBtn" class="btn btn-secondary btn-full">
-                        <i class="fa-solid fa-hammer"></i> Mint NFT
-                    </button>
-                </form>
+                <div class="header-stats">
+                    <div class="stat-pill"><i class="fa-solid fa-layer-group"></i> Total Supply: <strong id="totalSupplyVal">2</strong></div>
+                </div>
             </div>
 
-            <!-- Transfer Card -->
-            <div class="card card-glow animate-slide-up" style="animation-delay: 0.2s;">
-                <div class="card-header">
-                    <div class="card-icon"><i class="fa-solid fa-arrow-right-arrow-left"></i></div>
-                    <h2>Transfer Ownership</h2>
+            <!-- Stats Row -->
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-icon purple"><i class="fa-solid fa-fire-flame-curved"></i></div>
+                    <div>
+                        <p class="stat-label">Total Minted</p>
+                        <h3 class="stat-value" id="statMinted">2</h3>
+                    </div>
                 </div>
-                <form id="transferForm">
-                    <div class="form-group">
-                        <label for="transferTokenId">Token ID</label>
-                        <input type="number" id="transferTokenId" placeholder="e.g. 1337" min="1" required>
+                <div class="stat-card">
+                    <div class="stat-icon teal"><i class="fa-solid fa-arrow-right-arrow-left"></i></div>
+                    <div>
+                        <p class="stat-label">Transfers</p>
+                        <h3 class="stat-value" id="statTransfers">0</h3>
                     </div>
-                    <div class="form-group">
-                        <label for="receiverAddress">Recipient Public Key</label>
-                        <input type="text" id="receiverAddress" placeholder="e.g. G..." pattern="G[A-D2-7][A-Z2-7]{54}" title="Please enter a valid Stellar public key starting with G" required>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon orange"><i class="fa-solid fa-trash-can"></i></div>
+                    <div>
+                        <p class="stat-label">Burned</p>
+                        <h3 class="stat-value" id="statBurned">0</h3>
                     </div>
-                    <button type="submit" id="transferBtn" class="btn btn-outline btn-full">
-                        <i class="fa-solid fa-paper-plane"></i> Send Asset
-                    </button>
-                </form>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green"><i class="fa-solid fa-wallet"></i></div>
+                    <div>
+                        <p class="stat-label">Wallet</p>
+                        <h3 class="stat-value" id="statWallet" style="font-size: 0.9rem;">Not Connected</h3>
+                    </div>
+                </div>
             </div>
 
-            <!-- Burn / Delete Card -->
-            <div class="card card-glow animate-slide-up" style="animation-delay: 0.3s;">
-                <div class="card-header">
-                    <div class="card-icon icon-danger"><i class="fa-solid fa-fire"></i></div>
-                    <h2>Burn Asset</h2>
-                </div>
-                <form id="burnForm">
-                    <div class="form-group">
-                        <label for="burnTokenId">Token ID to Burn</label>
-                        <input type="number" id="burnTokenId" placeholder="e.g. 1337" min="1" required>
-                    </div>
-                    <button type="submit" id="burnBtn" class="btn btn-danger btn-full">
-                        <i class="fa-solid fa-trash-can"></i> Burn NFT
-                    </button>
-                </form>
-            </div>
+            <!-- Action Cards -->
+            <div class="action-grid">
 
-            <!-- Query/View NFT Card -->
-            <div class="card card-glow animate-slide-up" style="animation-delay: 0.4s;">
-                <div class="card-header">
-                    <div class="card-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
-                    <h2>Lookup NFT Details</h2>
+                <!-- Mint Card -->
+                <div class="action-card">
+                    <div class="action-card-header">
+                        <div class="action-icon purple"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                        <h2>Mint NFT</h2>
+                    </div>
+                    <form id="mintForm">
+                        <div class="form-group">
+                            <label for="nftName">Asset Name</label>
+                            <input type="text" id="nftName" placeholder="e.g. Astro Kitty #001" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="tokenId">Token ID</label>
+                            <input type="number" id="tokenId" placeholder="e.g. 1337" min="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="nftMetadata">Metadata Hash (SHA-256)</label>
+                            <input type="text" id="nftMetadata" placeholder="64-char hex string" pattern="[a-fA-F0-9]{64}" required>
+                        </div>
+                        <button type="submit" class="action-btn purple-btn">
+                            <i class="fa-solid fa-hammer"></i> Mint NFT
+                        </button>
+                    </form>
                 </div>
-                <form id="queryForm">
-                    <div class="form-group">
-                        <label for="queryTokenId">Token ID</label>
-                        <div class="input-action-group">
-                            <input type="number" id="queryTokenId" placeholder="e.g. 1337" min="1" required>
-                            <button type="submit" class="btn btn-secondary">Query</button>
+
+                <!-- Transfer Card -->
+                <div class="action-card">
+                    <div class="action-card-header">
+                        <div class="action-icon teal"><i class="fa-solid fa-paper-plane"></i></div>
+                        <h2>Transfer</h2>
+                    </div>
+                    <form id="transferForm">
+                        <div class="form-group">
+                            <label for="transferTokenId">Token ID</label>
+                            <input type="number" id="transferTokenId" placeholder="e.g. 1337" min="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="receiverAddress">Recipient Public Key</label>
+                            <input type="text" id="receiverAddress" placeholder="G..." required>
+                        </div>
+                        <button type="submit" class="action-btn teal-btn">
+                            <i class="fa-solid fa-arrow-right"></i> Send Asset
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Burn Card -->
+                <div class="action-card">
+                    <div class="action-card-header">
+                        <div class="action-icon orange"><i class="fa-solid fa-fire"></i></div>
+                        <h2>Burn NFT</h2>
+                    </div>
+                    <form id="burnForm">
+                        <div class="form-group">
+                            <label for="burnTokenId">Token ID to Burn</label>
+                            <input type="number" id="burnTokenId" placeholder="e.g. 1337" min="1" required>
+                        </div>
+                        <div class="burn-warning">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            This action is permanent and cannot be undone.
+                        </div>
+                        <button type="submit" class="action-btn orange-btn">
+                            <i class="fa-solid fa-trash-can"></i> Burn NFT
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Lookup Card -->
+                <div class="action-card">
+                    <div class="action-card-header">
+                        <div class="action-icon green"><i class="fa-solid fa-magnifying-glass"></i></div>
+                        <h2>Lookup NFT</h2>
+                    </div>
+                    <form id="queryForm">
+                        <div class="form-group">
+                            <label for="queryTokenId">Token ID</label>
+                            <div class="input-row">
+                                <input type="number" id="queryTokenId" placeholder="e.g. 1337" min="1" required>
+                                <button type="submit" class="action-btn green-btn sm-btn">Query</button>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="queryResult" class="query-result hidden">
+                        <div class="qr-row">
+                            <span class="qr-label">Name</span>
+                            <span id="resName" class="qr-value">—</span>
+                        </div>
+                        <div class="qr-row">
+                            <span class="qr-label">Token ID</span>
+                            <span id="resId" class="qr-value">—</span>
+                        </div>
+                        <div class="qr-row">
+                            <span class="qr-label">Owner</span>
+                            <span id="resOwner" class="qr-value truncate-val">—</span>
+                        </div>
+                        <div class="qr-row">
+                            <span class="qr-label">Metadata</span>
+                            <span id="resMeta" class="qr-value truncate-val">—</span>
                         </div>
                     </div>
-                </form>
-
-                <!-- Search Result Container -->
-                <div id="queryResult" class="result-box hidden">
-                    <div class="result-header">
-                        <span id="resName" class="res-title">NFT Name</span>
-                        <span id="resId" class="badge">#1</span>
-                    </div>
-                    <div class="result-body">
-                        <p><strong>Owner:</strong> <span id="resOwner" class="truncate">G...</span> <i class="fa-regular fa-copy copy-btn" title="Copy Address"></i></p>
-                        <p><strong>Metadata Hash:</strong> <span id="resMeta" class="truncate">0x...</span> <i class="fa-regular fa-copy copy-btn" title="Copy Metadata"></i></p>
-                    </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- Registry & Live Status Section -->
-        <section class="live-status animate-fade-in" style="animation-delay: 0.5s;">
-            <div class="section-title-bar">
-                <h2><i class="fa-solid fa-chart-line text-gradient"></i> Registry & Stats</h2>
-                <div class="total-stats">Total Supply: <span id="totalSupplyVal">0</span> NFTs</div>
             </div>
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <h3>NFT Contract ID</h3>
-                    <p class="truncate" id="contractIdText">CDVCJKX6FJFOOQ76BJ365SJS6OTGH2ZQF6QVJO5YGGR37QBJ3I2QB7PZ</p>
+
+            <!-- Contract Info -->
+            <div class="contract-bar">
+                <div class="contract-item">
+                    <span class="ci-label"><i class="fa-solid fa-file-contract"></i> NFT Contract</span>
+                    <span class="ci-val truncate-val" id="contractIdText">CDVCJKX6FJFOOQ76BJ365SJS6OTGH2ZQF6QVJO5YGGR37QBJ3I2QB7PZ</span>
                 </div>
-                <div class="stat-card">
-                    <h3>Latest Minted NFT</h3>
-                    <p id="latestNftText">None minted yet</p>
+                <div class="contract-item">
+                    <span class="ci-label"><i class="fa-solid fa-star"></i> Latest Mint</span>
+                    <span class="ci-val" id="latestNftText">None yet</span>
                 </div>
             </div>
         </section>
 
-        <!-- Transaction Notification Feed -->
-        <section class="feed-section animate-fade-in" style="animation-delay: 0.6s;">
-            <h2><i class="fa-solid fa-list-check"></i> Transaction Logs</h2>
-            <div id="logsFeed" class="logs-container">
-                <div class="empty-feed">No operations performed yet.</div>
+        <!-- ── ACTIVITY FEED PAGE ── -->
+        <section class="page hidden" id="page-activity">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">Activity Feed</h1>
+                    <p class="page-sub">Live stream of all NFT operations</p>
+                </div>
+            </div>
+            <div class="logs-container" id="logsFeed">
+                <div class="empty-state"><i class="fa-regular fa-clock"></i><br>No activity yet. Start minting!</div>
             </div>
         </section>
+
+        <!-- ── TX CENTER PAGE ── -->
+        <section class="page hidden" id="page-txcenter">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">Transaction Center</h1>
+                    <p class="page-sub">Track on-chain transaction history</p>
+                </div>
+            </div>
+            <div class="tx-table-wrap">
+                <table class="tx-table">
+                    <thead>
+                        <tr><th>Time</th><th>Type</th><th>Token ID</th><th>Details</th><th>Status</th></tr>
+                    </thead>
+                    <tbody id="txTableBody">
+                        <tr><td colspan="5" class="empty-state">No transactions recorded yet.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ── ANALYTICS PAGE ── -->
+        <section class="page hidden" id="page-analytics">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">Analytics</h1>
+                    <p class="page-sub">Collection growth and usage metrics</p>
+                </div>
+            </div>
+            <div class="analytics-grid">
+                <div class="analytics-card">
+                    <h3>NFTs Minted</h3>
+                    <div class="big-number" id="anMinted">2</div>
+                    <p class="an-sub">Total supply on-chain</p>
+                </div>
+                <div class="analytics-card">
+                    <h3>Total Transfers</h3>
+                    <div class="big-number" id="anTransfers">0</div>
+                    <p class="an-sub">Ownership changes</p>
+                </div>
+                <div class="analytics-card">
+                    <h3>Total Burned</h3>
+                    <div class="big-number" id="anBurned">0</div>
+                    <p class="an-sub">Tokens destroyed</p>
+                </div>
+                <div class="analytics-card">
+                    <h3>Active Network</h3>
+                    <div class="big-number network-display" id="anNetwork">Testnet</div>
+                    <p class="an-sub">Current blockchain network</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── SETTINGS PAGE ── -->
+        <section class="page hidden" id="page-settings">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">Settings</h1>
+                    <p class="page-sub">Platform configuration</p>
+                </div>
+            </div>
+            <div class="settings-grid">
+                <div class="settings-card">
+                    <h3><i class="fa-solid fa-file-contract"></i> Contract Address</h3>
+                    <p class="settings-desc">The deployed NFT smart contract address on Soroban.</p>
+                    <input type="text" class="settings-input" id="settingsContractId" value="CDVCJKX6FJFOOQ76BJ365SJS6OTGH2ZQF6QVJO5YGGR37QBJ3I2QB7PZ">
+                    <button class="action-btn purple-btn" onclick="applyContractSettings()"><i class="fa-solid fa-save"></i> Save</button>
+                </div>
+                <div class="settings-card">
+                    <h3><i class="fa-solid fa-network-wired"></i> Network Configuration</h3>
+                    <p class="settings-desc">Current active blockchain network.</p>
+                    <div class="settings-net-btns">
+                        <button class="net-choice active" data-net="testnet" onclick="selectNetwork(this, 'testnet')">Testnet</button>
+                        <button class="net-choice" data-net="mainnet" onclick="selectNetwork(this, 'mainnet')">Mainnet</button>
+                        <button class="net-choice" data-net="local" onclick="selectNetwork(this, 'local')">Local</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
     </main>
 
-    <!-- Wallet Selection Modal -->
-    <div id="walletModal" class="modal hidden">
-        <div class="modal-content card card-glow animate-slide-up">
-            <div class="modal-header">
-                <h2>Select Stellar Wallet</h2>
-                <button id="closeModalBtn" class="close-btn">&times;</button>
+    <!-- ── WALLET MODAL ─────────────────────────── -->
+    <div id="walletModal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div class="modal-title">
+                <div>
+                    <h2>Select a Wallet</h2>
+                    <p>Choose a supported Stellar wallet to connect.</p>
+                </div>
+                <button id="closeModalBtn" class="modal-close">Close</button>
             </div>
-            <div class="wallet-options">
-                <button class="wallet-opt-btn" data-wallet="freighter">
-                    <div class="wallet-logo-container logo-freighter">
-                        <i class="fa-solid fa-anchor"></i>
-                    </div>
-                    <div class="wallet-info">
+            <div class="wallet-list">
+                <button class="wallet-row" data-wallet="freighter">
+                    <div class="wallet-avatar f-color">F</div>
+                    <div class="wallet-row-info">
                         <h3>Freighter Wallet</h3>
-                        <p>Stellar Official Extension</p>
+                        <p>Official Stellar Extension</p>
                     </div>
+                    <i class="fa-solid fa-chevron-right wallet-chevron"></i>
                 </button>
-                <button class="wallet-opt-btn" data-wallet="xbull">
-                    <div class="wallet-logo-container logo-xbull">
-                        <i class="fa-solid fa-bullhorn"></i>
+                <button class="wallet-row" data-wallet="albedo">
+                    <div class="wallet-avatar a-color">A</div>
+                    <div class="wallet-row-info">
+                        <h3>Albedo Wallet</h3>
+                        <p>Web-based Signer</p>
                     </div>
-                    <div class="wallet-info">
+                    <i class="fa-solid fa-chevron-right wallet-chevron"></i>
+                </button>
+                <button class="wallet-row" data-wallet="xbull">
+                    <div class="wallet-avatar x-color">X</div>
+                    <div class="wallet-row-info">
                         <h3>xBull Wallet</h3>
-                        <p>Power User Stellar Extension</p>
+                        <p>Multi-chain Wallet</p>
                     </div>
+                    <i class="fa-solid fa-chevron-right wallet-chevron"></i>
                 </button>
-                <button class="wallet-opt-btn" data-wallet="albedo">
-                    <div class="wallet-logo-container logo-albedo">
-                        <i class="fa-solid fa-circle-nodes"></i>
+                <button class="wallet-row" data-wallet="lobstr">
+                    <div class="wallet-avatar l-color">L</div>
+                    <div class="wallet-row-info">
+                        <h3>LOBSTR / Public Key</h3>
+                        <p>Enter key + password to verify</p>
                     </div>
-                    <div class="wallet-info">
-                        <h3>Albedo Link</h3>
-                        <p>Universal Web & Extension Link</p>
-                    </div>
-                </button>
-                <button class="wallet-opt-btn" data-wallet="lobstr">
-                    <div class="wallet-logo-container logo-lobstr">
-                        <i class="fa-solid fa-shrimp"></i>
-                    </div>
-                    <div class="wallet-info">
-                        <h3>LOBSTR / Private Key</h3>
-                        <p>Authenticate with password verification</p>
-                    </div>
+                    <i class="fa-solid fa-chevron-right wallet-chevron"></i>
                 </button>
             </div>
-            
-            <!-- Secure Pass/Key verification form (Only shows when LOBSTR selected) -->
-            <div id="privateKeyAuthForm" class="private-key-form hidden">
+
+            <!-- LOBSTR manual key form -->
+            <div id="lobstrForm" class="lobstr-form hidden">
+                <hr class="modal-divider">
                 <div class="form-group">
                     <label for="stellarPublicKey">Stellar Public Key (G...)</label>
-                    <input type="text" id="stellarPublicKey" placeholder="e.g. GD3R..." pattern="G[A-D2-7][A-Z2-7]{54}" required>
+                    <input type="text" id="stellarPublicKey" placeholder="GDXXX...">
                 </div>
                 <div class="form-group">
-                    <label for="walletPassword">Wallet Password (to verify sign authority)</label>
-                    <input type="password" id="walletPassword" placeholder="••••••••" required>
+                    <label for="walletPassword">Wallet Password</label>
+                    <input type="password" id="walletPassword" placeholder="••••••••">
                 </div>
-                <button id="submitKeyAuthBtn" class="btn btn-secondary btn-full">Verify & Connect</button>
+                <button id="submitKeyAuthBtn" class="action-btn purple-btn">
+                    <i class="fa-solid fa-lock-open"></i> Verify & Connect
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Toast Notifications -->
+    <!-- Toast container -->
     <div id="toastContainer" class="toast-container"></div>
 
-    <footer class="footer">
-        <p>&copy; 2026 StellarMint Platform. Powered by Soroban & Freighter.</p>
-    </footer>
-
-    <!-- SDK & Logic Scripts -->
     <script src="app.js"></script>
 </body>
 </html>
