@@ -1216,7 +1216,7 @@ input:checked + .toggle-slider::before { left: calc(100% - 21px); background: #f
 
 /* ── Wallet Modal ──────────────────────────────────────────────── */
 .modal-overlay {
-    position: fixed; inset: 0; z-index: 500;
+    position: fixed; inset: 0; z-index: 2000;
     background: rgba(0,0,0,0.6);
     backdrop-filter: blur(6px);
     display: flex; align-items: center; justify-content: center;
