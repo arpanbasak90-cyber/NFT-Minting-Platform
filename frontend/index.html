@@ -10,7 +10,55 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://albedo.link/albedo.js" defer></script>
 </head>
-<body>
+<body class="landing-active">
+
+    <!-- ══ LANDING PAGE OVERLAY ══════════════════════════ -->
+    <div id="landingPage" class="landing-overlay">
+        <div class="landing-bg-glow">
+            <div class="lglow lglow-1"></div>
+            <div class="lglow lglow-2"></div>
+        </div>
+        
+        <header class="landing-header">
+            <div class="logo">
+                <div class="logo-icon"><i class="fa-solid fa-star"></i></div>
+                <span>Stellar<span style="font-weight:300;">Mint</span></span>
+            </div>
+            <button class="theme-btn" id="landingThemeBtn">
+                <i class="fa-solid fa-sun" id="landingThemeIcon"></i>
+            </button>
+        </header>
+
+        <div class="landing-hero">
+            <div class="hero-badge"><i class="fa-solid fa-cube"></i> Soroban Smart Contracts</div>
+            <h1>The Next-Gen NFT Platform on Stellar</h1>
+            <p>Experience ultra-fast minting, zero complexity, and robust ownership management using Soroban smart contracts. Securely link your wallet to access your custom dashboard.</p>
+            
+            <div class="landing-actions">
+                <button class="hero-connect-btn" id="landingConnectBtn">
+                    <i class="fa-solid fa-wallet"></i> Connect Wallet to Enter
+                </button>
+            </div>
+
+            <div class="hero-features">
+                <div class="hf-item">
+                    <i class="fa-solid fa-bolt"></i>
+                    <h3>Instant Minting</h3>
+                    <p>Gas-efficient Soroban contracts</p>
+                </div>
+                <div class="hf-item">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <h3>Multi-Wallet Support</h3>
+                    <p>Freighter, Albedo, xBull & LOBSTR</p>
+                </div>
+                <div class="hf-item">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <h3>Real-time Analytics</h3>
+                    <p>Visual statistics & exportable logs</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- ══ SIDEBAR ══════════════════════════════════════ -->
     <aside class="sidebar" id="sidebar">

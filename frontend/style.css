@@ -71,9 +71,175 @@ body {
     transition: background 0.3s, color 0.3s;
     overflow-x: hidden;
 }
+body.landing-active .sidebar,
+body.landing-active .main-wrapper {
+    display: none !important;
+}
 button { cursor: pointer; font-family: var(--font); }
 input, select { font-family: var(--font); }
 a { text-decoration: none; color: inherit; }
+
+/* ── Landing Page Overlay ────────────────────────────────────────── */
+.landing-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 1.5rem 2rem;
+    overflow-y: auto;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+body:not(.landing-active) .landing-overlay {
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(1.02);
+}
+
+.landing-bg-glow {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.lglow {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(140px);
+    opacity: 0.15;
+}
+.lglow-1 {
+    width: 600px; height: 600px;
+    background: var(--purple);
+    top: -200px; left: -100px;
+}
+.lglow-2 {
+    width: 500px; height: 500px;
+    background: var(--teal);
+    bottom: -200px; right: -100px;
+}
+
+.landing-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.landing-hero {
+    max-width: 800px;
+    margin: 4rem auto;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--purple-glow);
+    border: 1px solid var(--purple-border);
+    color: var(--purple);
+    padding: 0.4rem 1rem;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.landing-hero h1 {
+    font-family: var(--font-head);
+    font-size: 3rem;
+    font-weight: 800;
+    line-height: 1.15;
+    background: linear-gradient(135deg, var(--text) 30%, var(--text-muted) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.landing-hero p {
+    font-size: 1.05rem;
+    color: var(--text-sub);
+    line-height: 1.6;
+    max-width: 650px;
+}
+
+.landing-actions {
+    margin-top: 1rem;
+}
+
+.hero-connect-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.85rem 2rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    background: linear-gradient(135deg, var(--purple), #6d28d9);
+    box-shadow: 0 0 25px rgba(139, 92, 246, 0.4);
+    transition: var(--transition);
+}
+.hero-connect-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 35px rgba(139, 92, 246, 0.6);
+}
+
+.hero-features {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-top: 4rem;
+    width: 100%;
+}
+
+.hf-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    text-align: center;
+    transition: var(--transition);
+}
+.hf-item:hover {
+    border-color: var(--purple-border);
+    transform: translateY(-2px);
+}
+.hf-item i {
+    font-size: 1.5rem;
+    color: var(--purple);
+    margin-bottom: 0.85rem;
+}
+.hf-item h3 {
+    font-family: var(--font-head);
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.4rem;
+}
+.hf-item p {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+@media (max-width: 768px) {
+    .landing-hero h1 { font-size: 2.2rem; }
+    .hero-features { grid-template-columns: 1fr; gap: 1rem; margin-top: 2rem; }
+    .landing-hero { margin: 2rem auto; }
+}
 
 /* ── Sidebar ───────────────────────────────────────────────────── */
 .sidebar {

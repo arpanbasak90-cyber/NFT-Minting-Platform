@@ -36,6 +36,16 @@ window.addEventListener('DOMContentLoaded', () => {
     pushNotif('🚀 Welcome to StellarMint!', 'Connect your wallet to start minting NFTs on Soroban.', 'purple');
     simulateRpcLatency();
     setInterval(simulateRpcLatency, 8000);
+
+    // Landing connects
+    $('landingConnectBtn').addEventListener('click', () => {
+        $('walletModal').classList.remove('hidden');
+        $('lobstrForm').classList.add('hidden');
+    });
+
+    $('landingThemeBtn').addEventListener('click', () => {
+        setTheme(theme === 'dark' ? 'light' : 'dark');
+    });
 });
 
 // ── Page Navigation ───────────────────────────────────────────────────
@@ -67,8 +77,11 @@ function setTheme(t) {
     theme = t;
     document.documentElement.setAttribute('data-theme', t);
     const icon = $('themeIcon');
-    icon.className = t === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
-    $('themeToggleSwitch').checked = (t === 'light');
+    if (icon) icon.className = t === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+    const landingIcon = $('landingThemeIcon');
+    if (landingIcon) landingIcon.className = t === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+    const switchToggle = $('themeToggleSwitch');
+    if (switchToggle) switchToggle.checked = (t === 'light');
 }
 
 $('themeBtn').addEventListener('click', () => {
@@ -239,6 +252,7 @@ $('disconnectBtn').addEventListener('click', () => {
     $('disconnectBtn').classList.add('hidden');
     $('walletAddrDisplay').textContent = 'Not Connected';
     $('kpiBalance').textContent = '—';
+    document.body.classList.add('landing-active');
     showToast('Wallet disconnected', 'info');
     addLog('Wallet disconnected.', 'info');
 });
@@ -262,6 +276,7 @@ function setConnected(pk, type) {
     // Simulate balance
     const fakeBalance = (Math.random() * 9000 + 100).toFixed(2);
     $('kpiBalance').textContent = `${fakeBalance} XLM`;
+    document.body.classList.remove('landing-active');
     showToast(`Connected to ${type}!`, 'success');
     addLog(`Wallet connected via ${type}: ${pk.substring(0, 12)}...`, 'success');
     pushNotif('👛 Wallet Connected', `${type} wallet: ${short}`);
