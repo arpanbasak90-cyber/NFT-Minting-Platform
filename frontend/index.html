@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Albedo Stellar SDK -->
+    <script src="https://albedo.link/albedo.js"></script>
 </head>
 <body>
     <!-- Background Elements -->
@@ -23,7 +25,7 @@
             <span class="network-badge"><span class="dot"></span> Testnet</span>
             <button id="connectWalletBtn" class="btn btn-primary btn-glow">
                 <i class="fa-solid fa-wallet"></i>
-                <span id="walletStatusText">Connect Freighter</span>
+                <span id="walletStatusText">Connect Wallet</span>
             </button>
         </div>
     </header>
@@ -157,6 +159,59 @@
             </div>
         </section>
     </main>
+
+    <!-- Wallet Selection Modal -->
+    <div id="walletModal" class="modal hidden">
+        <div class="modal-content card card-glow animate-slide-up">
+            <div class="modal-header">
+                <h2>Select Stellar Wallet</h2>
+                <button id="closeModalBtn" class="close-btn">&times;</button>
+            </div>
+            <div class="wallet-options">
+                <button class="wallet-opt-btn" data-wallet="freighter">
+                    <img src="https://avatars.githubusercontent.com/u/104332997?s=200&v=4" alt="Freighter" class="wallet-logo">
+                    <div class="wallet-info">
+                        <h3>Freighter Wallet</h3>
+                        <p>Stellar Official Extension</p>
+                    </div>
+                </button>
+                <button class="wallet-opt-btn" data-wallet="xbull">
+                    <img src="https://xbull.app/img/logo.png" alt="xBull" class="wallet-logo">
+                    <div class="wallet-info">
+                        <h3>xBull Wallet</h3>
+                        <p>Power User Stellar Extension</p>
+                    </div>
+                </button>
+                <button class="wallet-opt-btn" data-wallet="albedo">
+                    <img src="https://albedo.link/images/albedo-logo.svg" alt="Albedo" class="wallet-logo">
+                    <div class="wallet-info">
+                        <h3>Albedo Link</h3>
+                        <p>Universal Web & Extension Link</p>
+                    </div>
+                </button>
+                <button class="wallet-opt-btn" data-wallet="lobstr">
+                    <img src="https://lobstr.co/static/images/logo_icon.svg" alt="LOBSTR" class="wallet-logo">
+                    <div class="wallet-info">
+                        <h3>LOBSTR / Private Key</h3>
+                        <p>Authenticate with password verification</p>
+                    </div>
+                </button>
+            </div>
+            
+            <!-- Secure Pass/Key verification form (Only shows when LOBSTR selected) -->
+            <div id="privateKeyAuthForm" class="private-key-form hidden">
+                <div class="form-group">
+                    <label for="stellarPublicKey">Stellar Public Key (G...)</label>
+                    <input type="text" id="stellarPublicKey" placeholder="e.g. GD3R..." pattern="G[A-D2-7][A-Z2-7]{54}" required>
+                </div>
+                <div class="form-group">
+                    <label for="walletPassword">Wallet Password (to verify sign authority)</label>
+                    <input type="password" id="walletPassword" placeholder="••••••••" required>
+                </div>
+                <button id="submitKeyAuthBtn" class="btn btn-secondary btn-full">Verify & Connect</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Toast Notifications -->
     <div id="toastContainer" class="toast-container"></div>

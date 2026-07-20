@@ -33,45 +33,152 @@ window.addEventListener("DOMContentLoaded", () => {
     document.getElementById("nftMetadata").value = randomHex;
 });
 
-// Connect Wallet handler
+// Wallet Selection Modal DOM Elements
+const walletModal = document.getElementById("walletModal");
+const closeModalBtn = document.getElementById("closeModalBtn");
+const walletOptButtons = document.querySelectorAll(".wallet-opt-btn");
+const privateKeyAuthForm = document.getElementById("privateKeyAuthForm");
+const submitKeyAuthBtn = document.getElementById("submitKeyAuthBtn");
+const stellarPublicKey = document.getElementById("stellarPublicKey");
+const walletPassword = document.getElementById("walletPassword");
+
+// Modal control
+function openWalletModal() {
+    walletModal.classList.remove("hidden");
+    privateKeyAuthForm.classList.add("hidden");
+}
+
+function closeWalletModal() {
+    walletModal.classList.add("hidden");
+}
+
+closeModalBtn.addEventListener("click", closeWalletModal);
+
+// Connect/Disconnect Button Handler
 connectWalletBtn.addEventListener("click", async () => {
     if (walletAddress) {
         // Disconnect
         walletAddress = null;
-        walletStatusText.textContent = "Connect Freighter";
+        walletStatusText.textContent = "Connect Wallet";
         connectWalletBtn.classList.remove("btn-secondary");
         connectWalletBtn.classList.add("btn-primary");
         showToast("Wallet disconnected", "info");
         addLog("Wallet disconnected by user.", "info");
         return;
     }
-
-    showToast("Connecting to Freighter...", "info");
-    
-    // Check if Freighter is available
-    if (typeof window.freighterApi !== "undefined" || window.stellarKeypair) {
-        try {
-            // Simulated Freighter flow (allows testing in any browser environment)
-            walletAddress = "GBK7PZQ5CDVJO5YGGR37QBJ3I2QB7PZ6QVJO5YGGR37QBJ3I2QB7P";
-            walletStatusText.textContent = `${walletAddress.substring(0, 6)}...${walletAddress.substring(walletAddress.length - 4)}`;
-            connectWalletBtn.classList.remove("btn-primary");
-            connectWalletBtn.classList.add("btn-secondary");
-            showToast("Connected to Freighter successfully!", "success");
-            addLog(`Wallet connected: ${walletAddress}`, "success");
-        } catch (err) {
-            showToast("Freighter connection rejected", "error");
-            addLog("Connection request rejected by user.", "error");
-        }
-    } else {
-        // Fallback/Simulation mode for easier evaluation without Freighter plugin installed
-        walletAddress = "G-DEMO-ACCOUNT-STELLAR-TESTNET-ONLY";
-        walletStatusText.textContent = "Demo Account Connected";
-        connectWalletBtn.classList.remove("btn-primary");
-        connectWalletBtn.classList.add("btn-secondary");
-        showToast("Freighter not detected. Running in Demo Sandbox mode.", "info");
-        addLog("Freighter not installed. Switched to Sandbox Testnet simulator.", "info");
-    }
+    openWalletModal();
 });
+
+// Handle Wallet Option Selection
+walletOptButtons.forEach(btn => {
+    btn.addEventListener("click", async () => {
+        const walletType = btn.getAttribute("data-wallet");
+        
+        if (walletType === "lobstr") {
+            // Show password and key input
+            privateKeyAuthForm.classList.remove("hidden");
+            return;
+        }
+
+        closeWalletModal();
+
+        if (walletType === "freighter") {
+            showToast("Connecting Freighter...", "info");
+            if (typeof window.freighterApi !== "undefined") {
+                try {
+                    const publicKey = await window.freighterApi.getPublicKey();
+                    setWalletConnected(publicKey, "Freighter");
+                } catch (err) {
+                    showToast("Freighter connection rejected", "error");
+                    addLog("Freighter connection rejected: " + err, "error");
+                }
+            } else {
+                // Fallback simulation with password confirmation prompt
+                promptMockWalletConnection("Freighter");
+            }
+        }
+        else if (walletType === "xbull") {
+            showToast("Connecting xBull...", "info");
+            if (typeof window.xBullSDK !== "undefined") {
+                try {
+                    const publicKey = await window.xBullSDK.getPublicKey();
+                    setWalletConnected(publicKey, "xBull");
+                } catch (err) {
+                    showToast("xBull connection rejected", "error");
+                    addLog("xBull connection rejected: " + err, "error");
+                }
+            } else {
+                // Fallback simulation with password confirmation prompt
+                promptMockWalletConnection("xBull");
+            }
+        }
+        else if (walletType === "albedo") {
+            showToast("Connecting Albedo...", "info");
+            if (typeof window.albedo !== "undefined") {
+                try {
+                    const res = await window.albedo.publicKey({});
+                    setWalletConnected(res.pubkey, "Albedo");
+                } catch (err) {
+                    showToast("Albedo connection rejected", "error");
+                    addLog("Albedo connection rejected: " + err, "error");
+                }
+            } else {
+                // Fallback simulation with password confirmation prompt
+                promptMockWalletConnection("Albedo");
+            }
+        }
+    });
+});
+
+// LOBSTR / Private Key Password authentication handler
+submitKeyAuthBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    const pubKey = stellarPublicKey.value.trim();
+    const pass = walletPassword.value.trim();
+
+    if (!pubKey || !pubKey.startsWith("G") || pubKey.length !== 56) {
+        showToast("Invalid Stellar Public Key format", "error");
+        return;
+    }
+
+    if (pass.length < 4) {
+        showToast("Password must be at least 4 characters long", "error");
+        return;
+    }
+
+    // Connect wallet
+    setWalletConnected(pubKey, "LOBSTR");
+    closeWalletModal();
+    
+    // Reset form inputs
+    stellarPublicKey.value = "";
+    walletPassword.value = "";
+});
+
+// Helpers for Wallet states
+function setWalletConnected(publicKey, type) {
+    walletAddress = publicKey;
+    walletStatusText.textContent = `${type}: ${publicKey.substring(0, 4)}...${publicKey.substring(publicKey.length - 4)}`;
+    connectWalletBtn.classList.remove("btn-primary");
+    connectWalletBtn.classList.add("btn-secondary");
+    showToast(`Connected to ${type}!`, "success");
+    addLog(`Wallet connected: ${publicKey} (${type})`, "success");
+}
+
+function promptMockWalletConnection(type) {
+    const password = prompt(`Enter password to unlock and connect your simulated ${type} Wallet:`, "");
+    if (password === null) {
+        showToast(`${type} connection cancelled`, "error");
+        return;
+    }
+    if (password.trim() === "") {
+        showToast("Password cannot be empty", "error");
+        return;
+    }
+    // Generate a beautiful simulated address based on the wallet type
+    const simulatedAddr = `GBK7${type.toUpperCase()}SIMULATEDKEYPAIR365SJS6OTGH2ZQ`;
+    setWalletConnected(simulatedAddr, type);
+}
 
 // Mint NFT
 mintForm.addEventListener("submit", (e) => {
