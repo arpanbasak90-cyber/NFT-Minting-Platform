@@ -1,6 +1,6 @@
 /**
  * StellarMint — NFT Minting Platform
- * Complete app logic with 10+ features, dark/light mode, gallery, analytics, etc.
+ * Dynamic, fully runtime-driven. No static/demo data.
  */
 
 // ── State ─────────────────────────────────────────────────────────────
@@ -9,14 +9,12 @@ let walletType    = null;
 let activeNetwork = 'testnet';
 let theme         = 'dark';
 let collectionCap = 100;
-let contractId    = 'CDVCJKX6FJFOOQ76BJ365SJS6OTGH2ZQF6QVJO5YGGR37QBJ3I2QB7PZ';
+let contractId    = '';
 
 const stats = { minted: 0, transfers: 0, burned: 0 };
 
-const nftStorage = new Map([
-    [1, { owner: 'GBK7DEMOSTELLARADDR1LPO4V', token_id: 1, name: 'Genesis NFT', royalty: 10, metadata: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' }],
-    [2, { owner: 'GA65DEMOSTELLARADDR2RTYFG', token_id: 2, name: 'Soroban Badge', royalty: 5, metadata: 'ca35da0a8939c365bcfda8939c148b267bcfda855e3b0c44298fc1c149afb924' }],
-]);
+// Empty — all data is user-generated at runtime
+const nftStorage = new Map();
 
 const txHistory     = [];
 const notifications = [];
