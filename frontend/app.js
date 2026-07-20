@@ -309,12 +309,6 @@ $('fpSimulatedAddress').addEventListener('change', (e) => {
 });
 
 $('confirmFreighterSimBtn').addEventListener('click', () => {
-    const pass = $('fpSimulatedPassword').value;
-    if (pass.length < 4) {
-        showToast('Password must be at least 4 characters to unlock', 'error');
-        return;
-    }
-    
     const selectedAddr = $('fpSimulatedAddress').value;
     $('freighterSimModal').classList.add('hidden');
     setConnected(selectedAddr, activeSimType);
