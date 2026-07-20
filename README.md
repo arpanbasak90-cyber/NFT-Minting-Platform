@@ -1,7 +1,7 @@
 # 🚀 Advanced NFT Minting Platform (Stellar - Soroban)
 
 [![CI/CD Status](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/actions/workflows/ci.yml/badge.svg)](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/actions/workflows/ci.yml)
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-brightgreen)](https://nft-minting-platform-stellar.vercel.app)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-brightgreen)](https://nft-minting-platform-2.vercel.app)
 
 An advanced **NFT (Non-Fungible Token) minting platform** built using **Soroban smart contracts** on the **Stellar blockchain**. This version implements Level 3 requirements, including error enums, event emitting, inter-contract communication, and a responsive frontend with wallet integration.
 
@@ -9,7 +9,7 @@ An advanced **NFT (Non-Fungible Token) minting platform** built using **Soroban 
 
 ## 🔗 Submission Details
 
-*   **Live Demo (Vercel):** [nft-minting-platform-stellar.vercel.app](https://nft-minting-platform-stellar.vercel.app)
+*   **Live Demo (Vercel):** [nft-minting-platform-2.vercel.app](https://nft-minting-platform-2.vercel.app)
 *   **Demo Video Link:** [Loom Demo Walkthrough (1-2 mins)](https://www.youtube.com/watch?v=dQw4w9WgXcQ) *(Placeholder: Update with your recorded link)*
 *   **Contract Deployment Address:** `CDVCJKX6FJFOOQ76BJ365SJS6OTGH2ZQF6QVJO5YGGR37QBJ3I2QB7PZ`
 *   **Registry Contract Address:** `CBV2FND634KOTG72BJ365SJS6OTGH2ZQF6QVJO5YGGR37QBJ3I2QB7PRE`
