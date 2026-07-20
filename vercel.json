@@ -1,0 +1,7 @@
+{
+  "cleanUrls": true,
+  "public": false,
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/frontend/$1" }
+  ]
+}
