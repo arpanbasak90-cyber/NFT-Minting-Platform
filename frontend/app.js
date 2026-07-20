@@ -257,13 +257,68 @@ $('disconnectBtn').addEventListener('click', () => {
     addLog('Wallet disconnected.', 'info');
 });
 
+let activeSimType = null;
+
 function promptPassword(type) {
-    const pass = prompt(`🔐 ${type} is not installed.\n\nEnter a password to simulate the connection:`);
-    if (pass === null) { showToast(`${type} connection cancelled`, 'info'); return; }
-    if (!pass.trim())  { showToast('Password cannot be empty', 'error'); return; }
-    const simAddr = `GSIM${type.toUpperCase()}WALLETDEMO${Date.now().toString(36).toUpperCase()}`;
-    setConnected(simAddr, type);
+    activeSimType = type;
+    
+    // Customize modal appearance based on wallet choice
+    const fpLogo = document.querySelector('#freighterSimModal .fp-logo img');
+    const fpTitle = document.querySelector('#freighterSimModal .fp-logo span');
+    
+    if (type === 'Freighter') {
+        fpLogo.src = 'https://avatars.githubusercontent.com/u/104169733?s=200&v=4';
+        fpTitle.textContent = 'Freighter';
+    } else if (type === 'Albedo') {
+        fpLogo.src = 'https://albedo.link/favicon.ico';
+        fpTitle.textContent = 'Albedo';
+    } else if (type === 'xBull') {
+        fpLogo.src = 'https://xbull.app/img/logo.png';
+        fpTitle.textContent = 'xBull';
+    }
+    
+    // Set network label
+    const formattedNet = activeNetwork === 'testnet' ? 'Test Net' : activeNetwork === 'mainnet' ? 'Public Net' : 'Local Net';
+    $('fpSelectedNetworkDisplay').textContent = formattedNet;
+    
+    // Pre-fill fields
+    const defaultAddr = $('fpSimulatedAddress').value;
+    const shortAddr = `${defaultAddr.substring(0, 5)}...${defaultAddr.substring(defaultAddr.length - 4)}`;
+    $('fpSelectedAddrDisplay').textContent = shortAddr;
+    $('fpSimulatedPassword').value = '';
+    
+    // Display modal
+    $('freighterSimModal').classList.remove('hidden');
 }
+
+// Simulated Freighter popup listeners
+$('closeFreighterSimBtn').addEventListener('click', () => {
+    $('freighterSimModal').classList.add('hidden');
+    showToast(`${activeSimType} connection cancelled`, 'info');
+});
+
+$('cancelFreighterSimBtn').addEventListener('click', () => {
+    $('freighterSimModal').classList.add('hidden');
+    showToast(`${activeSimType} connection cancelled`, 'info');
+});
+
+$('fpSimulatedAddress').addEventListener('change', (e) => {
+    const addr = e.target.value;
+    const shortAddr = `${addr.substring(0, 5)}...${addr.substring(addr.length - 4)}`;
+    $('fpSelectedAddrDisplay').textContent = shortAddr;
+});
+
+$('confirmFreighterSimBtn').addEventListener('click', () => {
+    const pass = $('fpSimulatedPassword').value;
+    if (pass.length < 4) {
+        showToast('Password must be at least 4 characters to unlock', 'error');
+        return;
+    }
+    
+    const selectedAddr = $('fpSimulatedAddress').value;
+    $('freighterSimModal').classList.add('hidden');
+    setConnected(selectedAddr, activeSimType);
+});
 
 function setConnected(pk, type) {
     walletAddress = pk;

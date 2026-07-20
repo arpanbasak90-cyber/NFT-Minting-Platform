@@ -669,6 +669,61 @@
                 <button id="submitKeyAuthBtn" class="op-btn purple-btn">
                     <i class="fa-solid fa-unlock"></i> Verify & Connect
                 </button>
+        </div>
+    </div>
+
+    <!-- ══ FREIGHTER SIMULATOR MODAL ══════════════════ -->
+    <div id="freighterSimModal" class="modal-overlay hidden">
+        <div class="freighter-popup">
+            <div class="fp-window-header">
+                <div class="fp-logo">
+                    <img src="https://avatars.githubusercontent.com/u/104169733?s=200&v=4" alt="Freighter" class="fp-brand-img">
+                    <span>Freighter</span>
+                </div>
+                <div class="fp-controls">
+                    <span class="fp-ctrl fp-min"></span>
+                    <span class="fp-ctrl fp-max"></span>
+                    <span class="fp-ctrl fp-close" id="closeFreighterSimBtn">✕</span>
+                </div>
+            </div>
+            <div class="fp-body">
+                <div class="fp-site-header">
+                    <div class="fp-globe"><i class="fa-solid fa-earth-americas"></i></div>
+                    <span class="fp-site-domain" id="fpSiteDomain">nft-minting-platform-2.vercel.app</span>
+                    <span class="fp-req-badge"><i class="fa-solid fa-link"></i> Connection Request</span>
+                </div>
+                <div class="fp-card">
+                    <p>Allow <strong id="fpSiteDomainCard">nft-minting-platform-2.vercel.app</strong> to view your wallet address, balance, activity and request approval for transactions</p>
+                </div>
+                <div class="fp-form">
+                    <div class="fg">
+                        <label>Select Simulated Wallet Address</label>
+                        <select id="fpSimulatedAddress">
+                            <option value="GBPEK7DEMOSTELLARKEYP2SV67Y">GBPE...P2SV (Demo Wallet 1)</option>
+                            <option value="GDVCA5DEMOSTELLARKEYA78V90X">GDVC...90X (Demo Wallet 2)</option>
+                            <option value="GACSBDEMOSTELLARKEY456Y78P">GACS...78P (Demo Wallet 3)</option>
+                        </select>
+                    </div>
+                    <div class="fg">
+                        <label>Simulated Password</label>
+                        <input type="password" id="fpSimulatedPassword" placeholder="Enter password to sign request">
+                    </div>
+                </div>
+                <div class="fp-connection-details">
+                    <div class="fp-row">
+                        <span class="fp-label"><i class="fa-solid fa-wallet"></i> Wallet</span>
+                        <span class="fp-val" id="fpSelectedAddrDisplay">GBPE...P2SV</span>
+                    </div>
+                    <div class="fp-row">
+                        <span class="fp-label"><i class="fa-solid fa-globe"></i> Network</span>
+                        <span class="fp-val highlight" id="fpSelectedNetworkDisplay">Test Net</span>
+                    </div>
+                </div>
+                <p class="fp-trust-note">Only confirm if you trust this site</p>
+                <div class="fp-actions">
+                    <button class="fp-btn fp-cancel" id="cancelFreighterSimBtn">Cancel</button>
+                    <button class="fp-btn fp-connect" id="confirmFreighterSimBtn">Connect</button>
+                </div>
             </div>
         </div>
     </div>
