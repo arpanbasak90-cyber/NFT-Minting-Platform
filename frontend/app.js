@@ -206,28 +206,25 @@ $$('.w-row').forEach(row => {
 
         if (type === 'freighter') {
             // ── Real Freighter Extension ───────────────────────────────
-            // The extension injects window.freighterApi automatically.
-            // getPublicKey() triggers the extension popup for permission if not yet allowed.
-            const freighterDetected =
-                typeof window.freighterApi !== 'undefined' ||
-                typeof window.freighter    !== 'undefined';
+            // Extensions inject window.freighterApi with a slight delay after
+            // page load. We poll for up to 4 seconds before concluding not installed.
+            showToast('Looking for Freighter extension…', 'info');
+            const api = await waitForFreighter(4000);
 
-            if (freighterDetected) {
-                const api = window.freighterApi || window.freighter;
+            if (api) {
                 try {
-                    // getPublicKey() handles permission request internally
                     const pk = await api.getPublicKey();
                     if (pk && pk.startsWith('G')) {
                         setConnected(pk, 'Freighter');
                     } else {
-                        showWalletError('Freighter', 'No public key returned. Please unlock your Freighter extension and try again.');
+                        showWalletError('Freighter', 'Could not get public key. Please unlock your Freighter wallet and try again.');
                     }
                 } catch (err) {
-                    const msg = err?.message || String(err);
-                    if (msg.toLowerCase().includes('denied') || msg.toLowerCase().includes('reject') || msg.toLowerCase().includes('cancel')) {
-                        showWalletError('Freighter', 'Connection was cancelled. Please approve the connection in Freighter.');
+                    const msg = (err?.message || String(err)).toLowerCase();
+                    if (msg.includes('denied') || msg.includes('reject') || msg.includes('cancel') || msg.includes('user')) {
+                        showWalletError('Freighter', 'Connection cancelled — please approve in the Freighter popup.');
                     } else {
-                        showWalletError('Freighter', msg || 'Connection failed. Make sure Freighter is unlocked and try again.');
+                        showWalletError('Freighter', err?.message || 'Connection failed. Make sure Freighter is unlocked.');
                     }
                 }
             } else {
@@ -277,6 +274,30 @@ $$('.w-row').forEach(row => {
 // ── Helper: show a connecting spinner toast ────────────────────────
 function showWalletConnecting(type) {
     showToast(`Connecting to ${type}…`, 'info');
+}
+
+// ── Helper: wait for Freighter to be injected ─────────────────────
+function waitForFreighter(timeoutMs = 4000) {
+    return new Promise((resolve) => {
+        // If already injected, resolve immediately
+        const getApi = () => window.freighterApi || window.freighter;
+        if (getApi()) {
+            resolve(getApi());
+            return;
+        }
+
+        const startTime = Date.now();
+        const interval = setInterval(() => {
+            const api = getApi();
+            if (api) {
+                clearInterval(interval);
+                resolve(api);
+            } else if (Date.now() - startTime >= timeoutMs) {
+                clearInterval(interval);
+                resolve(null);
+            }
+        }, 100);
+    });
 }
 
 // ── Helper: show wallet error ──────────────────────────────────────
