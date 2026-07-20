@@ -1,373 +1,650 @@
 /**
- * StellarMint – NFT Minting Platform
- * Full dashboard app with multi-wallet support and network selection
+ * StellarMint — NFT Minting Platform
+ * Complete app logic with 10+ features, dark/light mode, gallery, analytics, etc.
  */
 
-// ── App State ────────────────────────────────────────────────────────
+// ── State ─────────────────────────────────────────────────────────────
 let walletAddress = null;
-let walletType = null;
+let walletType    = null;
 let activeNetwork = 'testnet';
-let contractId = 'CDVCJKX6FJFOOQ76BJ365SJS6OTGH2ZQF6QVJO5YGGR37QBJ3I2QB7PZ';
-let stats = { minted: 0, transfers: 0, burned: 0 };
+let theme         = 'dark';
+let collectionCap = 100;
+let contractId    = 'CDVCJKX6FJFOOQ76BJ365SJS6OTGH2ZQF6QVJO5YGGR37QBJ3I2QB7PZ';
 
-// Seed some demo NFTs
+const stats = { minted: 0, transfers: 0, burned: 0 };
+
 const nftStorage = new Map([
-    [1, { owner: 'GBK7DEMOADDR4LPO', token_id: 1, metadata: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', name: 'Genesis NFT' }],
-    [2, { owner: 'GA65DEMOADDR2RTY', token_id: 2, metadata: 'ca35da0a8939c365bcfda8939c148b267bcfda855e3b0c44298fc1c149afb924', name: 'Soroban Badge' }],
+    [1, { owner: 'GBK7DEMOSTELLARADDR1LPO4V', token_id: 1, name: 'Genesis NFT', royalty: 10, metadata: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' }],
+    [2, { owner: 'GA65DEMOSTELLARADDR2RTYFG', token_id: 2, name: 'Soroban Badge', royalty: 5, metadata: 'ca35da0a8939c365bcfda8939c148b267bcfda855e3b0c44298fc1c149afb924' }],
 ]);
 
-const txHistory = [];
+const txHistory     = [];
+const notifications = [];
+const logHistory    = [];
 
-// ── DOM Refs ─────────────────────────────────────────────────────────
-const connectWalletBtn  = document.getElementById('connectWalletBtn');
-const walletStatusText  = document.getElementById('walletStatusText');
-const disconnectBtn     = document.getElementById('disconnectBtn');
-const walletModal       = document.getElementById('walletModal');
-const closeModalBtn     = document.getElementById('closeModalBtn');
-const networkSelector   = document.getElementById('networkSelector');
-const networkDropdown   = document.getElementById('networkDropdown');
-const networkLabel      = document.getElementById('networkLabel');
-const networkChevron    = document.getElementById('networkChevron');
-const lobstrForm        = document.getElementById('lobstrForm');
-const submitKeyAuthBtn  = document.getElementById('submitKeyAuthBtn');
+// ── DOM Quick-refs ────────────────────────────────────────────────────
+const $  = id => document.getElementById(id);
+const $$ = sel => document.querySelectorAll(sel);
 
 // ── Init ──────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
     stats.minted = nftStorage.size;
-    updateStats();
-    updateSupply();
-
-    // Seed random metadata
-    const randomHex = Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
-    document.getElementById('nftMetadata').value = randomHex;
-
-    addLog('Platform initialized. Connect a wallet to begin minting.', 'info');
+    refreshStats();
+    renderGallery();
+    randomizeMetaInput();
+    addLog('Platform ready. Connect your Stellar wallet to begin.', 'info');
+    pushNotif('🚀 Welcome to StellarMint!', 'Connect your wallet to start minting NFTs on Soroban.', 'purple');
+    simulateRpcLatency();
+    setInterval(simulateRpcLatency, 8000);
 });
 
 // ── Page Navigation ───────────────────────────────────────────────────
-document.querySelectorAll('.nav-tab').forEach(tab => {
-    tab.addEventListener('click', (e) => {
-        e.preventDefault();
-        const page = tab.dataset.page;
-        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        tab.classList.add('active');
-        document.getElementById(`page-${page}`)?.classList.add('active');
+$$('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+        const page = item.dataset.page;
+        $$('.nav-item').forEach(i => i.classList.remove('active'));
+        $$('.page').forEach(p => { p.classList.remove('active'); p.classList.add('hidden'); });
+        item.classList.add('active');
+        const target = $(`page-${page}`);
+        if (target) { target.classList.remove('hidden'); target.classList.add('active'); }
+
+        // Update breadcrumb
+        const label = item.querySelector('span:first-of-type')?.textContent || page;
+        $('pageBreadcrumb').innerHTML = `${item.querySelector('i').outerHTML} ${label}`;
+
+        // Close sidebar on mobile
+        $('sidebar').classList.remove('open');
     });
 });
 
+// Sidebar toggle (mobile)
+$('sidebarToggle').addEventListener('click', () => {
+    $('sidebar').classList.toggle('open');
+});
+
+// ── Dark / Light Mode ─────────────────────────────────────────────────
+function setTheme(t) {
+    theme = t;
+    document.documentElement.setAttribute('data-theme', t);
+    const icon = $('themeIcon');
+    icon.className = t === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+    $('themeToggleSwitch').checked = (t === 'light');
+}
+
+$('themeBtn').addEventListener('click', () => {
+    setTheme(theme === 'dark' ? 'light' : 'dark');
+});
+
+$('themeToggleSwitch').addEventListener('change', (e) => {
+    setTheme(e.target.checked ? 'light' : 'dark');
+});
+
 // ── Network Selector ──────────────────────────────────────────────────
-networkSelector.addEventListener('click', (e) => {
+$('netBtn').addEventListener('click', (e) => {
     e.stopPropagation();
-    networkDropdown.classList.toggle('hidden');
-    networkChevron.classList.toggle('open');
+    $('netDropdown').classList.toggle('hidden');
+    $('netBtn').querySelector('i').classList.toggle('open');
 });
 
 document.addEventListener('click', () => {
-    networkDropdown.classList.add('hidden');
-    networkChevron.classList.remove('open');
+    $('netDropdown').classList.add('hidden');
+    $('netBtn').querySelector('i').classList.remove('open');
 });
 
-document.querySelectorAll('.network-opt').forEach(opt => {
+$$('.net-opt').forEach(opt => {
     opt.addEventListener('click', (e) => {
         e.stopPropagation();
-        const net = opt.dataset.net;
-        setNetwork(net);
-        networkDropdown.classList.add('hidden');
-        networkChevron.classList.remove('open');
+        setNetwork(opt.dataset.net);
+        $('netDropdown').classList.add('hidden');
     });
 });
 
 function setNetwork(net) {
     activeNetwork = net;
-    networkLabel.textContent = net.charAt(0).toUpperCase() + net.slice(1);
+    const label = net.charAt(0).toUpperCase() + net.slice(1);
+    $('netLabel').textContent = label;
+    $('rpcNetwork').textContent = label;
+    $('anNetwork').textContent = label;
 
-    // Update dot color
-    const dot = document.querySelector('.network-current .network-dot');
-    dot.className = `network-dot ${net}`;
+    // Update dot class
+    $('netDot').className = `ndot ${net}`;
 
-    // Update active state
-    document.querySelectorAll('.network-opt').forEach(o => {
-        o.classList.toggle('active', o.dataset.net === net);
-    });
-
-    // Update analytics page
-    document.getElementById('anNetwork').textContent = net.charAt(0).toUpperCase() + net.slice(1);
+    // Update dropdown active
+    $$('.net-opt').forEach(o => o.classList.toggle('active', o.dataset.net === net));
 
     // Update settings buttons
-    document.querySelectorAll('.net-choice').forEach(b => {
-        b.classList.toggle('active', b.dataset.net === net);
-    });
+    $$('.nt-btn').forEach(b => b.classList.toggle('active', b.dataset.net === net));
 
-    showToast(`Switched to ${net.charAt(0).toUpperCase() + net.slice(1)}`, 'info');
-    addLog(`Network changed to ${net}`, 'info');
+    simulateRpcLatency();
+    showToast(`Switched to ${label}`, 'info');
+    addLog(`Network changed → ${label}`, 'info');
+    pushNotif(`🌐 Network Changed`, `You are now on ${label}.`);
 }
 
-// Settings network selector
-function selectNetwork(btn, net) {
+function setNetFromSettings(btn, net) {
     setNetwork(net);
 }
 
-// Settings contract save
+// ── Settings ──────────────────────────────────────────────────────────
 function applyContractSettings() {
-    const val = document.getElementById('settingsContractId').value.trim();
-    if (val) {
+    const val = $('settingsContractId').value.trim();
+    if (val && val.startsWith('C') && val.length >= 50) {
         contractId = val;
-        document.getElementById('contractIdText').textContent = val;
-        showToast('Contract address updated!', 'success');
+        $('contractIdText').textContent = val;
+        showToast('Contract address saved!', 'success');
+        addLog(`Contract updated: ${val.substring(0,12)}...`, 'info');
+    } else {
+        showToast('Invalid contract address', 'error');
     }
 }
 
+function applyCollectionCap() {
+    const v = parseInt($('settingsCollectionCap').value);
+    if (v >= 1) {
+        collectionCap = v;
+        refreshStats();
+        showToast(`Collection cap set to ${v}`, 'success');
+    } else {
+        showToast('Cap must be at least 1', 'error');
+    }
+}
+
+// ── Global Search ─────────────────────────────────────────────────────
+$('globalSearch').addEventListener('input', (e) => {
+    const q = e.target.value.trim().toLowerCase();
+    if (!q) return;
+    // Search in nftStorage
+    let found = null;
+    for (const [id, nft] of nftStorage) {
+        if (nft.name.toLowerCase().includes(q) || String(id).includes(q)) {
+            found = nft; break;
+        }
+    }
+    if (found) {
+        showToast(`Found: "${found.name}" (#${found.token_id})`, 'success');
+    } else if (q.length > 2) {
+        showToast(`No NFT matches "${q}"`, 'info');
+    }
+});
+
 // ── Wallet Connection ─────────────────────────────────────────────────
-connectWalletBtn.addEventListener('click', () => {
-    walletModal.classList.remove('hidden');
-    lobstrForm.classList.add('hidden');
+$('connectWalletBtn').addEventListener('click', () => {
+    $('walletModal').classList.remove('hidden');
+    $('lobstrForm').classList.add('hidden');
 });
 
-closeModalBtn.addEventListener('click', () => {
-    walletModal.classList.add('hidden');
+$('closeModalBtn').addEventListener('click', () => {
+    $('walletModal').classList.add('hidden');
 });
 
-walletModal.addEventListener('click', (e) => {
-    if (e.target === walletModal) walletModal.classList.add('hidden');
+$('walletModal').addEventListener('click', (e) => {
+    if (e.target === $('walletModal')) $('walletModal').classList.add('hidden');
 });
 
-document.querySelectorAll('.wallet-row').forEach(row => {
+$$('.w-row').forEach(row => {
     row.addEventListener('click', async () => {
         const type = row.dataset.wallet;
 
         if (type === 'lobstr') {
-            lobstrForm.classList.toggle('hidden');
+            $('lobstrForm').classList.toggle('hidden');
             return;
         }
 
-        walletModal.classList.add('hidden');
+        $('walletModal').classList.add('hidden');
 
         if (type === 'freighter') {
             if (typeof window.freighterApi !== 'undefined') {
                 try {
                     const pk = await window.freighterApi.getPublicKey();
                     setConnected(pk, 'Freighter');
-                } catch (err) {
-                    promptPassword('Freighter');
-                }
-            } else {
-                promptPassword('Freighter');
-            }
-        } else if (type === 'albedo') {
+                } catch { promptPassword('Freighter'); }
+            } else { promptPassword('Freighter'); }
+        }
+
+        else if (type === 'albedo') {
             if (typeof window.albedo !== 'undefined') {
                 try {
                     const res = await window.albedo.publicKey({});
                     setConnected(res.pubkey, 'Albedo');
-                } catch (err) {
-                    promptPassword('Albedo');
-                }
-            } else {
-                promptPassword('Albedo');
-            }
-        } else if (type === 'xbull') {
+                } catch { promptPassword('Albedo'); }
+            } else { promptPassword('Albedo'); }
+        }
+
+        else if (type === 'xbull') {
             if (typeof window.xBullSDK !== 'undefined') {
                 try {
                     const pk = await window.xBullSDK.getPublicKey();
                     setConnected(pk, 'xBull');
-                } catch (err) {
-                    promptPassword('xBull');
-                }
-            } else {
-                promptPassword('xBull');
-            }
+                } catch { promptPassword('xBull'); }
+            } else { promptPassword('xBull'); }
         }
     });
 });
 
-// LOBSTR manual key auth
-submitKeyAuthBtn.addEventListener('click', () => {
-    const pk   = document.getElementById('stellarPublicKey').value.trim();
-    const pass = document.getElementById('walletPassword').value.trim();
-
-    if (!pk.startsWith('G') || pk.length < 50) {
-        showToast('Invalid Stellar public key', 'error'); return;
-    }
-    if (pass.length < 4) {
-        showToast('Password must be at least 4 characters', 'error'); return;
-    }
-
-    walletModal.classList.add('hidden');
+$('submitKeyAuthBtn').addEventListener('click', () => {
+    const pk   = $('stellarPublicKey').value.trim();
+    const pass = $('walletPassword').value;
+    if (!pk.startsWith('G') || pk.length < 50) { showToast('Invalid Stellar public key', 'error'); return; }
+    if (pass.length < 4) { showToast('Password must be at least 4 characters', 'error'); return; }
+    $('walletModal').classList.add('hidden');
     setConnected(pk, 'LOBSTR');
-    document.getElementById('stellarPublicKey').value = '';
-    document.getElementById('walletPassword').value = '';
+    $('stellarPublicKey').value = '';
+    $('walletPassword').value = '';
 });
 
-disconnectBtn.addEventListener('click', () => {
-    walletAddress = null;
-    walletType = null;
-    walletStatusText.textContent = 'Connect Wallet';
-    connectWalletBtn.classList.remove('connected');
-    disconnectBtn.classList.add('hidden');
-    document.getElementById('statWallet').textContent = 'Not Connected';
+$('disconnectBtn').addEventListener('click', () => {
+    walletAddress = null; walletType = null;
+    $('walletStatusText').textContent = 'Connect Wallet';
+    $('connectWalletBtn').classList.remove('connected');
+    $('disconnectBtn').classList.add('hidden');
+    $('walletAddrDisplay').textContent = 'Not Connected';
+    $('kpiBalance').textContent = '—';
     showToast('Wallet disconnected', 'info');
     addLog('Wallet disconnected.', 'info');
 });
 
-function setConnected(pk, type) {
-    walletAddress = pk;
-    walletType = type;
-    const short = `${pk.substring(0, 4)}...${pk.substring(pk.length - 4)}`;
-    walletStatusText.textContent = `${type}: ${short}`;
-    connectWalletBtn.classList.add('connected');
-    disconnectBtn.classList.remove('hidden');
-    document.getElementById('statWallet').textContent = short;
-    showToast(`Connected to ${type}!`, 'success');
-    addLog(`Wallet connected via ${type}: ${pk}`, 'success');
-}
-
 function promptPassword(type) {
-    const pass = prompt(`🔐 Enter a password to simulate connecting your ${type} wallet:`);
+    const pass = prompt(`🔐 ${type} is not installed.\n\nEnter a password to simulate the connection:`);
     if (pass === null) { showToast(`${type} connection cancelled`, 'info'); return; }
-    if (!pass.trim()) { showToast('Password cannot be empty', 'error'); return; }
-    const simAddr = `G${type.toUpperCase()}SIMULATEDDEMOKEYSTELLAR365SJS`;
+    if (!pass.trim())  { showToast('Password cannot be empty', 'error'); return; }
+    const simAddr = `GSIM${type.toUpperCase()}WALLETDEMO${Date.now().toString(36).toUpperCase()}`;
     setConnected(simAddr, type);
 }
 
+function setConnected(pk, type) {
+    walletAddress = pk;
+    walletType    = type;
+    const short = `${pk.substring(0, 5)}...${pk.substring(pk.length - 4)}`;
+    $('walletStatusText').textContent = `${type}: ${short}`;
+    $('connectWalletBtn').classList.add('connected');
+    $('disconnectBtn').classList.remove('hidden');
+    $('walletAddrDisplay').textContent = pk;
+    // Simulate balance
+    const fakeBalance = (Math.random() * 9000 + 100).toFixed(2);
+    $('kpiBalance').textContent = `${fakeBalance} XLM`;
+    showToast(`Connected to ${type}!`, 'success');
+    addLog(`Wallet connected via ${type}: ${pk.substring(0, 12)}...`, 'success');
+    pushNotif('👛 Wallet Connected', `${type} wallet: ${short}`);
+}
+
 // ── Mint NFT ──────────────────────────────────────────────────────────
-document.getElementById('mintForm').addEventListener('submit', (e) => {
+$('mintForm').addEventListener('submit', (e) => {
     e.preventDefault();
     if (!walletAddress) { showToast('Connect a wallet first', 'error'); return; }
 
-    const name = document.getElementById('nftName').value.trim();
-    const id   = parseInt(document.getElementById('tokenId').value);
-    const meta = document.getElementById('nftMetadata').value.trim();
+    const name    = $('nftName').value.trim();
+    const id      = parseInt($('tokenId').value);
+    const meta    = $('nftMetadata').value.trim();
+    const royalty = parseInt($('nftRoyalty').value) || 0;
 
-    if (nftStorage.has(id)) {
-        showToast(`Token ID #${id} already exists!`, 'error'); return;
-    }
+    if (nftStorage.has(id)) { showToast(`Token ID #${id} already exists!`, 'error'); return; }
+    if (nftStorage.size >= collectionCap) { showToast(`Collection cap of ${collectionCap} reached!`, 'error'); return; }
 
-    nftStorage.set(id, { owner: walletAddress, token_id: id, metadata: meta, name });
+    nftStorage.set(id, { owner: walletAddress, token_id: id, name, royalty, metadata: meta });
     stats.minted++;
-    updateStats(); updateSupply();
+    refreshStats();
+    renderGallery();
 
-    const msg = `Minted "${name}" (#${id})`;
-    document.getElementById('latestNftText').textContent = `"${name}" (#${id})`;
+    const msg = `Minted "${name}" (#${id}) with ${royalty}% royalty`;
+    $('latestNftText').textContent = `"${name}" (#${id})`;
     showToast(msg, 'success');
     addLog(msg, 'success');
-    recordTx('Mint', id, `To: ${walletAddress.substring(0, 8)}...`);
+    recordTx('mint', id, `By: ${walletAddress.substring(0, 8)}...`);
+    pushNotif('🎨 NFT Minted!', `"${name}" (Token #${id}) was minted successfully.`);
     e.target.reset();
-    document.getElementById('nftMetadata').value = Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+    randomizeMetaInput();
 });
 
 // ── Transfer NFT ──────────────────────────────────────────────────────
-document.getElementById('transferForm').addEventListener('submit', (e) => {
+$('transferForm').addEventListener('submit', (e) => {
     e.preventDefault();
     if (!walletAddress) { showToast('Connect a wallet first', 'error'); return; }
 
-    const id  = parseInt(document.getElementById('transferTokenId').value);
-    const to  = document.getElementById('receiverAddress').value.trim();
+    const id   = parseInt($('transferTokenId').value);
+    const to   = $('receiverAddress').value.trim();
+    const note = $('transferNote').value.trim();
 
+    if (!to.startsWith('G') || to.length < 50) { showToast('Invalid recipient Stellar address', 'error'); return; }
     if (!nftStorage.has(id)) { showToast(`NFT #${id} not found`, 'error'); return; }
 
     const nft = nftStorage.get(id);
-    if (nft.owner !== walletAddress && !walletAddress.includes('SIMULATED') && !walletAddress.includes('DEMO')) {
-        showToast('You are not the owner of this NFT', 'error'); return;
-    }
-
     nft.owner = to;
     nftStorage.set(id, nft);
     stats.transfers++;
-    updateStats();
+    refreshStats();
+    renderGallery();
 
-    const msg = `Transferred #${id} to ${to.substring(0, 8)}...`;
+    const detail = note ? `${to.substring(0, 8)}... — ${note}` : `To: ${to.substring(0, 8)}...`;
+    const msg = `Transferred #${id} → ${to.substring(0, 8)}...`;
     showToast(msg, 'success');
     addLog(msg, 'success');
-    recordTx('Transfer', id, `To: ${to.substring(0, 8)}...`);
+    recordTx('transfer', id, detail);
+    pushNotif('🔄 Transfer Complete', `Token #${id} transferred to ${to.substring(0, 8)}...`);
     e.target.reset();
 });
 
 // ── Burn NFT ──────────────────────────────────────────────────────────
-document.getElementById('burnForm').addEventListener('submit', (e) => {
+$('burnForm').addEventListener('submit', (e) => {
     e.preventDefault();
     if (!walletAddress) { showToast('Connect a wallet first', 'error'); return; }
 
-    const id = parseInt(document.getElementById('burnTokenId').value);
+    const id = parseInt($('burnTokenId').value);
     if (!nftStorage.has(id)) { showToast(`NFT #${id} not found`, 'error'); return; }
 
+    const nft = nftStorage.get(id);
     nftStorage.delete(id);
     stats.burned++;
-    updateStats(); updateSupply();
+    refreshStats();
+    renderGallery();
 
-    const msg = `Burned NFT #${id}`;
+    const msg = `Burned NFT "${nft.name}" (#${id})`;
     showToast(msg, 'success');
     addLog(msg, 'success');
-    recordTx('Burn', id, 'Destroyed');
+    recordTx('burn', id, 'Permanently Destroyed');
+    pushNotif('🔥 NFT Burned', `"${nft.name}" (#${id}) was permanently destroyed.`);
     e.target.reset();
 });
 
 // ── Query NFT ─────────────────────────────────────────────────────────
-document.getElementById('queryForm').addEventListener('submit', (e) => {
+$('queryForm').addEventListener('submit', (e) => {
     e.preventDefault();
-    const id  = parseInt(document.getElementById('queryTokenId').value);
-    const res = document.getElementById('queryResult');
+    const id  = parseInt($('queryTokenId').value);
+    const box = $('queryResult');
 
-    if (!nftStorage.has(id)) {
-        showToast(`NFT #${id} not found`, 'error');
-        res.classList.add('hidden'); return;
-    }
+    if (!nftStorage.has(id)) { showToast(`NFT #${id} not found`, 'error'); box.classList.add('hidden'); return; }
 
     const nft = nftStorage.get(id);
-    document.getElementById('resName').textContent  = nft.name;
-    document.getElementById('resId').textContent    = `#${nft.token_id}`;
-    document.getElementById('resOwner').textContent = nft.owner;
-    document.getElementById('resMeta').textContent  = nft.metadata;
-    res.classList.remove('hidden');
-    showToast(`Fetched NFT #${id}`, 'success');
+    $('resName').textContent    = nft.name;
+    $('resId').textContent      = `#${nft.token_id}`;
+    $('resOwner').textContent   = nft.owner;
+    $('resRoyalty').textContent = `${nft.royalty}%`;
+    $('resMeta').textContent    = nft.metadata;
+    box.classList.remove('hidden');
+    showToast(`Found NFT #${id}: "${nft.name}"`, 'success');
 });
 
-// ── Helpers ───────────────────────────────────────────────────────────
-function updateStats() {
-    document.getElementById('statMinted').textContent    = stats.minted;
-    document.getElementById('statTransfers').textContent = stats.transfers;
-    document.getElementById('statBurned').textContent    = stats.burned;
-    document.getElementById('anMinted').textContent      = stats.minted;
-    document.getElementById('anTransfers').textContent   = stats.transfers;
-    document.getElementById('anBurned').textContent      = stats.burned;
+$('copyQueryBtn')?.addEventListener('click', () => {
+    const id = $('resId').textContent;
+    const name = $('resName').textContent;
+    navigator.clipboard.writeText(`NFT ${id}: ${name}\nOwner: ${$('resOwner').textContent}\nMetadata: ${$('resMeta').textContent}`)
+        .then(() => showToast('NFT details copied!', 'success'))
+        .catch(() => showToast('Copy failed', 'error'));
+});
+
+// ── Copy address util ─────────────────────────────────────────────────
+function copyText(elementId) {
+    const el = $(elementId);
+    if (!el) return;
+    const text = el.textContent || el.value;
+    navigator.clipboard.writeText(text)
+        .then(() => showToast('Copied to clipboard!', 'success'))
+        .catch(() => showToast('Copy failed', 'error'));
 }
 
-function updateSupply() {
-    document.getElementById('totalSupplyVal').textContent = nftStorage.size;
+// ── Gallery ───────────────────────────────────────────────────────────
+function renderGallery(filter = '') {
+    const grid = $('galleryGrid');
+    grid.innerHTML = '';
+
+    const colors = ['#8b5cf6', '#14b8a6', '#f97316', '#22c55e', '#ef4444', '#f59e0b'];
+    const emojis = ['🖼️', '🎨', '💎', '⭐', '🚀', '🔮', '🌊', '🔥', '💫', '🌟'];
+
+    let entries = [...nftStorage.entries()];
+
+    if (filter) {
+        entries = entries.filter(([id, nft]) =>
+            nft.name.toLowerCase().includes(filter.toLowerCase()) || String(id).includes(filter)
+        );
+    }
+
+    // Apply sort
+    const sortBy = $('gallerySortBy')?.value || 'id-asc';
+    entries.sort((a, b) => {
+        if (sortBy === 'id-asc')  return a[0] - b[0];
+        if (sortBy === 'id-desc') return b[0] - a[0];
+        if (sortBy === 'name')    return a[1].name.localeCompare(b[1].name);
+        return 0;
+    });
+
+    if (entries.length === 0) {
+        grid.innerHTML = '<div class="empty-state"><i class="fa-solid fa-images"></i><br>No NFTs found.</div>';
+        return;
+    }
+
+    entries.forEach(([id, nft]) => {
+        const color = colors[id % colors.length];
+        const emoji = emojis[id % emojis.length];
+        const card = document.createElement('div');
+        card.className = 'gallery-card';
+        card.innerHTML = `
+            <div class="gallery-thumb" style="background: linear-gradient(135deg, ${color}22, ${color}44);">
+                <span>${emoji}</span>
+                <span class="gallery-token-badge">#${id}</span>
+            </div>
+            <div class="gallery-card-body">
+                <h3>${nft.name}</h3>
+                <p>Royalty: ${nft.royalty}% · Owner: ${nft.owner.substring(0, 8)}...</p>
+            </div>
+        `;
+        card.addEventListener('click', () => {
+            showToast(`${nft.name} — Owner: ${nft.owner.substring(0, 10)}...`, 'info');
+        });
+        grid.appendChild(card);
+    });
+
+    // Update gallery badge
+    $('galleryBadge').textContent = nftStorage.size;
 }
 
+// Gallery search + sort
+$('gallerySearch')?.addEventListener('input', (e) => renderGallery(e.target.value));
+$('gallerySortBy')?.addEventListener('change', () => renderGallery($('gallerySearch')?.value || ''));
+
+// ── Activity Feed ─────────────────────────────────────────────────────
 function addLog(msg, type = 'info') {
-    const feed = document.getElementById('logsFeed');
+    logHistory.unshift({ msg, type, time: new Date() });
+    const feed  = $('logsFeed');
     const empty = feed.querySelector('.empty-state');
     if (empty) empty.remove();
 
-    const item = document.createElement('div');
-    item.className = `log-item ${type}`;
-    item.innerHTML = `<span>${msg}</span><span class="log-time">${new Date().toLocaleTimeString()}</span>`;
-    feed.insertBefore(item, feed.firstChild);
+    const row = document.createElement('div');
+    row.className = `log-row ${type}`;
+    row.innerHTML = `<span>${msg}</span><span class="log-time">${new Date().toLocaleTimeString()}</span>`;
+    feed.insertBefore(row, feed.firstChild);
 }
 
-function recordTx(type, tokenId, detail) {
-    const tbody = document.getElementById('txTableBody');
-    const empty = tbody.querySelector('td.empty-state');
-    if (empty) empty.closest('tr').remove();
+$('clearLogsBtn')?.addEventListener('click', () => {
+    $('logsFeed').innerHTML = '<div class="empty-state"><i class="fa-solid fa-clock"></i><br>Logs cleared.</div>';
+    logHistory.length = 0;
+    showToast('Activity feed cleared', 'info');
+});
+
+// ── Export CSV ────────────────────────────────────────────────────────
+$('exportCsvBtn')?.addEventListener('click', () => exportCsv('activity'));
+$('exportTxCsvBtn')?.addEventListener('click', () => exportCsv('tx'));
+
+function exportCsv(type) {
+    let csv = '';
+    if (type === 'activity') {
+        csv = 'Time,Type,Message\n' + logHistory.map(l => `"${l.time.toLocaleTimeString()}","${l.type}","${l.msg}"`).join('\n');
+    } else {
+        csv = 'Time,Type,Token ID,Details,Network\n' + txHistory.map(t => `"${t.time}","${t.type}","${t.id}","${t.detail}","${t.network}"`).join('\n');
+    }
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url;
+    a.download = `stellarmint-${type}-${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast(`Exported ${type === 'activity' ? 'activity log' : 'transactions'} as CSV`, 'success');
+}
+
+// ── Tx Center ─────────────────────────────────────────────────────────
+function recordTx(type, id, detail) {
+    const tbody = $('txTableBody');
+    const emptyRow = tbody.querySelector('tr td.empty-td');
+    if (emptyRow) emptyRow.closest('tr').remove();
+
+    const entry = { time: new Date().toLocaleTimeString(), type, id, detail, network: activeNetwork };
+    txHistory.unshift(entry);
 
     const row = document.createElement('tr');
     row.innerHTML = `
-        <td>${new Date().toLocaleTimeString()}</td>
-        <td><span class="tx-type ${type.toLowerCase()}">${type}</span></td>
-        <td>#${tokenId}</td>
+        <td>${entry.time}</td>
+        <td><span class="tx-badge ${type}">${type}</span></td>
+        <td>#${id}</td>
         <td>${detail}</td>
-        <td><span class="tx-status">✅ Success</span></td>
+        <td><span class="ndot ${activeNetwork}" style="display:inline-block;margin-right:4px"></span>${activeNetwork}</td>
+        <td class="tx-ok">✓ Success</td>
     `;
     tbody.insertBefore(row, tbody.firstChild);
 }
 
+// ── Analytics ─────────────────────────────────────────────────────────
+function refreshStats() {
+    const total = stats.minted;
+    const txs   = stats.transfers;
+    const burns = stats.burned;
+
+    // KPI
+    $('kpiMinted').textContent    = total;
+    $('kpiTransfers').textContent = txs;
+    $('kpiBurned').textContent    = burns;
+
+    // Analytics big stats
+    $('anMinted').textContent    = total;
+    $('anTransfers').textContent = txs;
+    $('anBurned').textContent    = burns;
+
+    // Analytics bars (max 100)
+    const mintPct  = Math.min((total / 100) * 100, 100);
+    const txPct    = Math.min((txs / Math.max(total, 1)) * 100, 100);
+    const burnPct  = Math.min((burns / Math.max(total, 1)) * 100, 100);
+    $('anMintFill').style.width     = `${mintPct}%`;
+    $('anTransferFill').style.width = `${txPct}%`;
+    $('anBurnFill').style.width     = `${burnPct}%`;
+
+    // Progress bar
+    const supply = nftStorage.size;
+    $('totalSupplyVal').textContent = supply;
+    const pct = Math.min((supply / collectionCap) * 100, 100);
+    $('progressFill').style.width  = `${pct}%`;
+    $('progressText').textContent  = `${supply} / ${collectionCap} NFTs minted`;
+
+    // Breakdown bars
+    const totalOps = total + txs + burns;
+    if (totalOps > 0) {
+        const mp = Math.round((total / totalOps) * 100);
+        const tp = Math.round((txs  / totalOps) * 100);
+        const bp = Math.round((burns / totalOps) * 100);
+        $('bbMint').style.width          = `${mp}%`;
+        $('bbTransfer').style.width      = `${tp}%`;
+        $('bbBurn').style.width          = `${bp}%`;
+        $('bbMintPct').textContent       = `${mp}%`;
+        $('bbTransferPct').textContent   = `${tp}%`;
+        $('bbBurnPct').textContent       = `${bp}%`;
+    }
+}
+
+// ── Notifications ─────────────────────────────────────────────────────
+function pushNotif(title, body, color = 'purple') {
+    notifications.unshift({ title, body, time: new Date(), unread: true });
+    const count = notifications.filter(n => n.unread).length;
+    $('notifBadge').textContent = count > 0 ? count : '0';
+
+    // Render
+    const list  = $('notifList');
+    const empty = list.querySelector('.empty-state');
+    if (empty) empty.remove();
+
+    const item = document.createElement('div');
+    item.className = 'notif-item unread';
+    item.innerHTML = `
+        <div class="notif-icon">🔔</div>
+        <div class="notif-body">
+            <strong>${title}</strong>
+            <p>${body}</p>
+        </div>
+        <span class="notif-time">${new Date().toLocaleTimeString()}</span>
+    `;
+    list.insertBefore(item, list.firstChild);
+}
+
+$('clearNotifsBtn')?.addEventListener('click', () => {
+    $('notifList').innerHTML = '<div class="empty-state"><i class="fa-solid fa-bell-slash"></i><br>No notifications.</div>';
+    notifications.length = 0;
+    $('notifBadge').textContent = '0';
+    showToast('All notifications cleared', 'info');
+});
+
+// ── Quick Mint Templates ──────────────────────────────────────────────
+$$('.template-use-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const name    = btn.dataset.name;
+        const royalty = btn.dataset.royalty;
+
+        // Navigate to dashboard and prefill form
+        $$('.nav-item').forEach(i => i.classList.remove('active'));
+        $$('.page').forEach(p => { p.classList.remove('active'); p.classList.add('hidden'); });
+        document.querySelector('[data-page="dashboard"]').classList.add('active');
+        $('page-dashboard').classList.remove('hidden');
+        $('page-dashboard').classList.add('active');
+        $('pageBreadcrumb').innerHTML = '<i class="fa-solid fa-grid-2"></i> Dashboard';
+
+        // Fill form
+        $('nftName').value    = `${name} #${Math.floor(Math.random() * 999) + 1}`;
+        $('nftRoyalty').value = royalty;
+        randomizeMetaInput();
+        $('tokenId').focus();
+
+        showToast(`Template "${name}" loaded!`, 'success');
+    });
+});
+
+$('saveTemplateBtn')?.addEventListener('click', () => {
+    const name = $('nftName').value.trim();
+    if (!name) { showToast('Fill in Asset Name on Dashboard first', 'error'); return; }
+    showToast(`Template "${name}" saved (demo)!`, 'success');
+    addLog(`Saved quick-mint template: "${name}"`, 'info');
+});
+
+$('addCustomTemplateBtn')?.addEventListener('click', () => {
+    const name = $('nftName').value.trim() || prompt('Enter template name:');
+    if (!name) return;
+    showToast(`Template "${name}" saved!`, 'success');
+});
+
+// ── RPC Latency Simulation ────────────────────────────────────────────
+function simulateRpcLatency() {
+    const latency = Math.floor(Math.random() * 80) + 20;
+    $('rpcLatency').textContent = `~${latency}ms`;
+    $('rpcDot').className = latency < 100 ? 'rpc-dot live' : 'rpc-dot dead';
+}
+
+// ── Regen metadata ────────────────────────────────────────────────────
+function randomizeMetaInput() {
+    const hex = Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+    const inp = $('nftMetadata');
+    if (inp) inp.value = hex;
+}
+
+$('regenMetaBtn')?.addEventListener('click', () => {
+    randomizeMetaInput();
+    showToast('New metadata hash generated!', 'info');
+});
+
+// ── Toast Notifications ───────────────────────────────────────────────
 function showToast(msg, type = 'info') {
-    const container = document.getElementById('toastContainer');
+    const container = $('toastContainer');
     const toast = document.createElement('div');
-    const icon  = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+    const icons = { success: '✅', error: '❌', info: 'ℹ️' };
     toast.className = `toast ${type}`;
-    toast.innerHTML = `<span>${icon}</span> <span>${msg}</span>`;
+    toast.innerHTML = `<span>${icons[type] || 'ℹ️'}</span><span>${msg}</span>`;
     container.appendChild(toast);
-    setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3000);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 350);
+    }, 3200);
 }

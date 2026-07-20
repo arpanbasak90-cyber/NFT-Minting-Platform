@@ -1,398 +1,631 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StellarMint — NFT Minting Platform</title>
-    <meta name="description" content="Mint, transfer and manage NFTs on Stellar Soroban blockchain.">
+    <title>StellarMint — NFT Platform</title>
+    <meta name="description" content="Mint, manage, and transfer NFTs on the Stellar Soroban blockchain. The most powerful NFT platform on Stellar.">
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://albedo.link/albedo.js" defer></script>
 </head>
 <body>
 
-    <!-- Ambient Background -->
-    <div class="ambient-bg">
-        <div class="orb orb-1"></div>
-        <div class="orb orb-2"></div>
+    <!-- ══ SIDEBAR ══════════════════════════════════════ -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-icon">
+                <i class="fa-solid fa-star"></i>
+            </div>
+            <div class="brand-text">
+                <span class="brand-name">Stellar<em>Mint</em></span>
+                <span class="brand-tag">NFT Platform</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <span class="nav-section-label">MAIN</span>
+            <a class="nav-item active" data-page="dashboard">
+                <i class="fa-solid fa-grid-2"></i>
+                <span>Dashboard</span>
+            </a>
+            <a class="nav-item" data-page="gallery">
+                <i class="fa-solid fa-images"></i>
+                <span>NFT Gallery</span>
+                <span class="nav-badge" id="galleryBadge">2</span>
+            </a>
+            <a class="nav-item" data-page="activity">
+                <i class="fa-solid fa-wave-square"></i>
+                <span>Activity Feed</span>
+                <span class="nav-dot" id="activityDot"></span>
+            </a>
+            <a class="nav-item" data-page="txcenter">
+                <i class="fa-solid fa-receipt"></i>
+                <span>Tx Center</span>
+            </a>
+
+            <span class="nav-section-label">INSIGHTS</span>
+            <a class="nav-item" data-page="analytics">
+                <i class="fa-solid fa-chart-line-up"></i>
+                <span>Analytics</span>
+            </a>
+            <a class="nav-item" data-page="notifications">
+                <i class="fa-solid fa-bell"></i>
+                <span>Notifications</span>
+                <span class="nav-badge red" id="notifBadge">0</span>
+            </a>
+
+            <span class="nav-section-label">TOOLS</span>
+            <a class="nav-item" data-page="quickmint">
+                <i class="fa-solid fa-bolt"></i>
+                <span>Quick Mint</span>
+            </a>
+            <a class="nav-item" data-page="settings">
+                <i class="fa-solid fa-sliders"></i>
+                <span>Settings</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <!-- RPC Network Status -->
+            <div class="rpc-status" id="rpcStatus">
+                <div class="rpc-dot live" id="rpcDot"></div>
+                <div class="rpc-info">
+                    <span class="rpc-network" id="rpcNetwork">Testnet</span>
+                    <span class="rpc-latency" id="rpcLatency">~42ms</span>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ══ MAIN WRAPPER ══════════════════════════════════ -->
+    <div class="main-wrapper">
+
+        <!-- TOP BAR -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <button class="sidebar-toggle" id="sidebarToggle">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="page-breadcrumb" id="pageBreadcrumb">
+                    <i class="fa-solid fa-grid-2"></i> Dashboard
+                </div>
+            </div>
+            <div class="topbar-right">
+                <!-- Search bar -->
+                <div class="topbar-search">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="globalSearch" placeholder="Search NFTs by name or ID…">
+                </div>
+
+                <!-- Network selector -->
+                <div class="net-selector" id="netSelector">
+                    <button class="net-btn" id="netBtn">
+                        <span class="ndot testnet" id="netDot"></span>
+                        <span id="netLabel">Testnet</span>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </button>
+                    <div class="net-dropdown hidden" id="netDropdown">
+                        <button class="net-opt active" data-net="testnet"><span class="ndot testnet"></span> Testnet</button>
+                        <button class="net-opt" data-net="mainnet"><span class="ndot mainnet"></span> Mainnet</button>
+                        <button class="net-opt" data-net="local"><span class="ndot local"></span> Local</button>
+                    </div>
+                </div>
+
+                <!-- Theme toggle -->
+                <button class="theme-btn" id="themeBtn" title="Toggle Light/Dark Mode">
+                    <i class="fa-solid fa-sun" id="themeIcon"></i>
+                </button>
+
+                <!-- Wallet -->
+                <button class="wallet-connect-btn" id="connectWalletBtn">
+                    <i class="fa-solid fa-wallet"></i>
+                    <span id="walletStatusText">Connect Wallet</span>
+                </button>
+                <button class="wallet-disconnect hidden" id="disconnectBtn" title="Disconnect">
+                    <i class="fa-solid fa-power-off"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- ══ PAGES ══════════════════════════════════════ -->
+        <main class="content-area">
+
+            <!-- ─── DASHBOARD ─────────────────────────────── -->
+            <section class="page active" id="page-dashboard">
+                <div class="page-head">
+                    <div>
+                        <h1>Dashboard</h1>
+                        <p>Welcome to StellarMint. Your Soroban NFT hub.</p>
+                    </div>
+                    <div class="head-actions">
+                        <div class="supply-chip">
+                            <i class="fa-solid fa-layer-group"></i>
+                            Supply: <strong id="totalSupplyVal">2</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stat Cards -->
+                <div class="kpi-row">
+                    <div class="kpi-card purple">
+                        <div class="kpi-icon"><i class="fa-solid fa-fire-flame-curved"></i></div>
+                        <div class="kpi-body">
+                            <p>Total Minted</p>
+                            <h2 id="kpiMinted">2</h2>
+                        </div>
+                    </div>
+                    <div class="kpi-card teal">
+                        <div class="kpi-icon"><i class="fa-solid fa-arrow-right-arrow-left"></i></div>
+                        <div class="kpi-body">
+                            <p>Transfers</p>
+                            <h2 id="kpiTransfers">0</h2>
+                        </div>
+                    </div>
+                    <div class="kpi-card orange">
+                        <div class="kpi-icon"><i class="fa-solid fa-fire"></i></div>
+                        <div class="kpi-body">
+                            <p>Burned</p>
+                            <h2 id="kpiBurned">0</h2>
+                        </div>
+                    </div>
+                    <div class="kpi-card green">
+                        <div class="kpi-icon"><i class="fa-solid fa-coins"></i></div>
+                        <div class="kpi-body">
+                            <p>Wallet Balance</p>
+                            <h2 id="kpiBalance">—</h2>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Collection Progress -->
+                <div class="panel progress-panel">
+                    <div class="panel-row">
+                        <span class="panel-label"><i class="fa-solid fa-chart-bar"></i> Collection Cap Progress</span>
+                        <span id="progressText">2 / 100 NFTs minted</span>
+                    </div>
+                    <div class="progress-track"><div class="progress-fill" id="progressFill" style="width: 2%"></div></div>
+                </div>
+
+                <!-- 2-col action layout -->
+                <div class="ops-grid">
+
+                    <!-- Mint -->
+                    <div class="ops-card">
+                        <div class="ops-header purple">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                            <h2>Mint NFT</h2>
+                        </div>
+                        <form id="mintForm">
+                            <div class="fg">
+                                <label>Asset Name</label>
+                                <input type="text" id="nftName" placeholder="e.g. Astro Kitty #001" required>
+                            </div>
+                            <div class="fg">
+                                <label>Token ID</label>
+                                <input type="number" id="tokenId" placeholder="e.g. 1337" min="1" required>
+                            </div>
+                            <div class="fg">
+                                <label>Metadata Hash (SHA-256)</label>
+                                <input type="text" id="nftMetadata" placeholder="64-char hex" pattern="[a-fA-F0-9]{64}" required>
+                                <button type="button" class="regen-btn" id="regenMetaBtn" title="Generate random hash">
+                                    <i class="fa-solid fa-refresh"></i>
+                                </button>
+                            </div>
+                            <div class="fg">
+                                <label>Royalty % (0–25)</label>
+                                <input type="number" id="nftRoyalty" placeholder="e.g. 5" min="0" max="25" value="5">
+                            </div>
+                            <button type="submit" class="op-btn purple-btn">
+                                <i class="fa-solid fa-hammer"></i> Mint NFT
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Transfer -->
+                    <div class="ops-card">
+                        <div class="ops-header teal">
+                            <i class="fa-solid fa-paper-plane"></i>
+                            <h2>Transfer Ownership</h2>
+                        </div>
+                        <form id="transferForm">
+                            <div class="fg">
+                                <label>Token ID</label>
+                                <input type="number" id="transferTokenId" placeholder="e.g. 1337" min="1" required>
+                            </div>
+                            <div class="fg">
+                                <label>Recipient Public Key</label>
+                                <input type="text" id="receiverAddress" placeholder="G..." required>
+                            </div>
+                            <div class="fg">
+                                <label>Transfer Note (optional)</label>
+                                <input type="text" id="transferNote" placeholder="e.g. Sold at auction">
+                            </div>
+                            <button type="submit" class="op-btn teal-btn">
+                                <i class="fa-solid fa-right-long"></i> Transfer NFT
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Burn -->
+                    <div class="ops-card">
+                        <div class="ops-header orange">
+                            <i class="fa-solid fa-fire"></i>
+                            <h2>Burn NFT</h2>
+                        </div>
+                        <form id="burnForm">
+                            <div class="fg">
+                                <label>Token ID to Burn</label>
+                                <input type="number" id="burnTokenId" placeholder="e.g. 1337" min="1" required>
+                            </div>
+                            <div class="danger-note">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                                Burning permanently destroys the NFT and cannot be undone.
+                            </div>
+                            <button type="submit" class="op-btn orange-btn">
+                                <i class="fa-solid fa-trash-can"></i> Confirm Burn
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Lookup -->
+                    <div class="ops-card">
+                        <div class="ops-header green">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <h2>Lookup NFT</h2>
+                        </div>
+                        <form id="queryForm">
+                            <div class="fg">
+                                <label>Token ID</label>
+                                <div class="inline-row">
+                                    <input type="number" id="queryTokenId" placeholder="e.g. 1337" min="1" required>
+                                    <button type="submit" class="op-btn green-btn">Query</button>
+                                </div>
+                            </div>
+                        </form>
+                        <div id="queryResult" class="query-box hidden">
+                            <div class="qrow"><span>Name</span><strong id="resName">—</strong></div>
+                            <div class="qrow"><span>Token ID</span><strong id="resId">—</strong></div>
+                            <div class="qrow"><span>Owner</span><strong id="resOwner" class="clip">—</strong></div>
+                            <div class="qrow"><span>Royalty</span><strong id="resRoyalty">—</strong></div>
+                            <div class="qrow"><span>Metadata</span><strong id="resMeta" class="clip">—</strong></div>
+                            <button class="copy-qr-btn" id="copyQueryBtn"><i class="fa-solid fa-copy"></i> Copy Details</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contract Info bar -->
+                <div class="info-bar">
+                    <div class="ib-item">
+                        <span><i class="fa-solid fa-file-contract"></i> Contract</span>
+                        <strong class="clip" id="contractIdText">CDVCJKX6FJFOOQ76BJ365SJS6OTGH2ZQF6QVJO5YGGR37QBJ3I2QB7PZ</strong>
+                        <button class="copy-icon" onclick="copyText('contractIdText')"><i class="fa-solid fa-copy"></i></button>
+                    </div>
+                    <div class="ib-item">
+                        <span><i class="fa-solid fa-star"></i> Latest</span>
+                        <strong id="latestNftText">None yet</strong>
+                    </div>
+                    <div class="ib-item">
+                        <span><i class="fa-solid fa-wallet"></i> Address</span>
+                        <strong class="clip" id="walletAddrDisplay">Not Connected</strong>
+                        <button class="copy-icon" id="copyWalletBtn" onclick="copyText('walletAddrDisplay')"><i class="fa-solid fa-copy"></i></button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ─── NFT GALLERY ────────────────────────────── -->
+            <section class="page hidden" id="page-gallery">
+                <div class="page-head">
+                    <div>
+                        <h1>NFT Gallery</h1>
+                        <p>Browse and manage your entire collection</p>
+                    </div>
+                    <div class="head-actions">
+                        <input type="text" id="gallerySearch" placeholder="Search by name or ID…" class="search-input">
+                        <select id="gallerySortBy" class="sort-select">
+                            <option value="id-asc">ID ↑</option>
+                            <option value="id-desc">ID ↓</option>
+                            <option value="name">Name A-Z</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="gallery-grid" id="galleryGrid">
+                    <div class="empty-state"><i class="fa-solid fa-images"></i><br>No NFTs minted yet.</div>
+                </div>
+            </section>
+
+            <!-- ─── ACTIVITY FEED ──────────────────────────── -->
+            <section class="page hidden" id="page-activity">
+                <div class="page-head">
+                    <div>
+                        <h1>Activity Feed</h1>
+                        <p>Real-time log of all NFT operations</p>
+                    </div>
+                    <div class="head-actions">
+                        <button class="op-btn teal-btn" id="exportCsvBtn">
+                            <i class="fa-solid fa-file-csv"></i> Export CSV
+                        </button>
+                        <button class="op-btn orange-btn" id="clearLogsBtn">
+                            <i class="fa-solid fa-trash"></i> Clear
+                        </button>
+                    </div>
+                </div>
+                <div class="log-feed" id="logsFeed">
+                    <div class="empty-state"><i class="fa-solid fa-clock"></i><br>No activity yet. Start minting!</div>
+                </div>
+            </section>
+
+            <!-- ─── TX CENTER ──────────────────────────────── -->
+            <section class="page hidden" id="page-txcenter">
+                <div class="page-head">
+                    <div>
+                        <h1>Transaction Center</h1>
+                        <p>On-chain transaction history and records</p>
+                    </div>
+                    <div class="head-actions">
+                        <button class="op-btn green-btn" id="exportTxCsvBtn">
+                            <i class="fa-solid fa-download"></i> Export CSV
+                        </button>
+                    </div>
+                </div>
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Type</th>
+                                <th>Token ID</th>
+                                <th>Details</th>
+                                <th>Network</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="txTableBody">
+                            <tr><td colspan="6" class="empty-td">No transactions yet.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ─── ANALYTICS ──────────────────────────────── -->
+            <section class="page hidden" id="page-analytics">
+                <div class="page-head">
+                    <div>
+                        <h1>Analytics</h1>
+                        <p>Collection metrics and growth insights</p>
+                    </div>
+                </div>
+                <div class="analytics-row">
+                    <div class="big-stat-card purple">
+                        <span class="bs-label">Total Minted</span>
+                        <div class="bs-value" id="anMinted">2</div>
+                        <div class="bs-bar"><div class="bs-fill" id="anMintFill" style="width: 2%"></div></div>
+                    </div>
+                    <div class="big-stat-card teal">
+                        <span class="bs-label">Transfers</span>
+                        <div class="bs-value" id="anTransfers">0</div>
+                        <div class="bs-bar"><div class="bs-fill" id="anTransferFill" style="width: 0%"></div></div>
+                    </div>
+                    <div class="big-stat-card orange">
+                        <span class="bs-label">Burned</span>
+                        <div class="bs-value" id="anBurned">0</div>
+                        <div class="bs-bar"><div class="bs-fill" id="anBurnFill" style="width: 0%"></div></div>
+                    </div>
+                    <div class="big-stat-card green">
+                        <span class="bs-label">Active Network</span>
+                        <div class="bs-value net-val" id="anNetwork">Testnet</div>
+                        <div class="bs-bar"><div class="bs-fill" style="width: 100%"></div></div>
+                    </div>
+                </div>
+                <!-- Activity breakdown -->
+                <div class="panel mt-20">
+                    <h3 class="panel-title">📊 Operation Breakdown</h3>
+                    <div class="breakdown-grid" id="breakdownGrid">
+                        <div class="breakdown-item">
+                            <span>Mint</span>
+                            <div class="breakdown-bar"><div class="bbfill purple" id="bbMint" style="width: 100%"></div></div>
+                            <span id="bbMintPct">100%</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>Transfer</span>
+                            <div class="breakdown-bar"><div class="bbfill teal" id="bbTransfer" style="width: 0%"></div></div>
+                            <span id="bbTransferPct">0%</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>Burn</span>
+                            <div class="breakdown-bar"><div class="bbfill orange" id="bbBurn" style="width: 0%"></div></div>
+                            <span id="bbBurnPct">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ─── NOTIFICATIONS ──────────────────────────── -->
+            <section class="page hidden" id="page-notifications">
+                <div class="page-head">
+                    <div>
+                        <h1>Notifications</h1>
+                        <p>Alerts and system messages</p>
+                    </div>
+                    <div class="head-actions">
+                        <button class="op-btn orange-btn" id="clearNotifsBtn">Clear All</button>
+                    </div>
+                </div>
+                <div class="notif-list" id="notifList">
+                    <div class="empty-state"><i class="fa-solid fa-bell-slash"></i><br>No notifications yet.</div>
+                </div>
+            </section>
+
+            <!-- ─── QUICK MINT ─────────────────────────────── -->
+            <section class="page hidden" id="page-quickmint">
+                <div class="page-head">
+                    <div>
+                        <h1>Quick Mint</h1>
+                        <p>Saved templates for fast minting</p>
+                    </div>
+                    <div class="head-actions">
+                        <button class="op-btn purple-btn" id="saveTemplateBtn">
+                            <i class="fa-solid fa-floppy-disk"></i> Save Current as Template
+                        </button>
+                    </div>
+                </div>
+                <div class="template-grid" id="templateGrid">
+                    <!-- Preset templates -->
+                    <div class="template-card" data-name="Stellar Badge" data-royalty="5">
+                        <div class="template-icon purple"><i class="fa-solid fa-certificate"></i></div>
+                        <h3>Stellar Badge</h3>
+                        <p>Official community badge NFT</p>
+                        <span class="template-tag">Royalty: 5%</span>
+                        <button class="op-btn purple-btn template-use-btn" data-name="Stellar Badge" data-royalty="5">
+                            <i class="fa-solid fa-bolt"></i> Use Template
+                        </button>
+                    </div>
+                    <div class="template-card" data-name="Genesis NFT" data-royalty="10">
+                        <div class="template-icon teal"><i class="fa-solid fa-gem"></i></div>
+                        <h3>Genesis NFT</h3>
+                        <p>First-edition genesis collection</p>
+                        <span class="template-tag">Royalty: 10%</span>
+                        <button class="op-btn teal-btn template-use-btn" data-name="Genesis NFT" data-royalty="10">
+                            <i class="fa-solid fa-bolt"></i> Use Template
+                        </button>
+                    </div>
+                    <div class="template-card" data-name="Art Drop" data-royalty="7">
+                        <div class="template-icon orange"><i class="fa-solid fa-palette"></i></div>
+                        <h3>Art Drop</h3>
+                        <p>Limited edition digital artwork</p>
+                        <span class="template-tag">Royalty: 7%</span>
+                        <button class="op-btn orange-btn template-use-btn" data-name="Art Drop" data-royalty="7">
+                            <i class="fa-solid fa-bolt"></i> Use Template
+                        </button>
+                    </div>
+                    <div class="template-card add-template" id="addTemplateCard">
+                        <div class="template-icon muted"><i class="fa-solid fa-plus"></i></div>
+                        <h3>Custom Template</h3>
+                        <p>Save your current mint settings</p>
+                        <button class="op-btn muted-btn" id="addCustomTemplateBtn">
+                            <i class="fa-solid fa-floppy-disk"></i> Save Template
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ─── SETTINGS ───────────────────────────────── -->
+            <section class="page hidden" id="page-settings">
+                <div class="page-head">
+                    <div>
+                        <h1>Settings</h1>
+                        <p>Configure your platform preferences</p>
+                    </div>
+                </div>
+                <div class="settings-layout">
+                    <div class="settings-card">
+                        <div class="sc-head"><i class="fa-solid fa-file-contract"></i> Contract Address</div>
+                        <p class="sc-desc">The deployed NFT contract address on Soroban</p>
+                        <input type="text" class="sc-input" id="settingsContractId" value="CDVCJKX6FJFOOQ76BJ365SJS6OTGH2ZQF6QVJO5YGGR37QBJ3I2QB7PZ">
+                        <button class="op-btn purple-btn" onclick="applyContractSettings()"><i class="fa-solid fa-save"></i> Save</button>
+                    </div>
+                    <div class="settings-card">
+                        <div class="sc-head"><i class="fa-solid fa-network-wired"></i> Network</div>
+                        <p class="sc-desc">Switch between Stellar blockchain networks</p>
+                        <div class="net-toggle-row">
+                            <button class="nt-btn active" data-net="testnet" onclick="setNetFromSettings(this,'testnet')">
+                                <span class="ndot testnet"></span> Testnet
+                            </button>
+                            <button class="nt-btn" data-net="mainnet" onclick="setNetFromSettings(this,'mainnet')">
+                                <span class="ndot mainnet"></span> Mainnet
+                            </button>
+                            <button class="nt-btn" data-net="local" onclick="setNetFromSettings(this,'local')">
+                                <span class="ndot local"></span> Local
+                            </button>
+                        </div>
+                    </div>
+                    <div class="settings-card">
+                        <div class="sc-head"><i class="fa-solid fa-circle-half-stroke"></i> Appearance</div>
+                        <p class="sc-desc">Toggle between dark and light themes</p>
+                        <div class="theme-toggle-row">
+                            <span>Dark Mode</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="themeToggleSwitch">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span>Light Mode</span>
+                        </div>
+                    </div>
+                    <div class="settings-card">
+                        <div class="sc-head"><i class="fa-solid fa-collection-limit"></i> Collection Cap</div>
+                        <p class="sc-desc">Maximum number of NFTs in your collection</p>
+                        <input type="number" class="sc-input" id="settingsCollectionCap" value="100" min="1">
+                        <button class="op-btn teal-btn" onclick="applyCollectionCap()"><i class="fa-solid fa-save"></i> Update Cap</button>
+                    </div>
+                </div>
+            </section>
+
+        </main>
     </div>
 
-    <!-- ── TOP NAV ─────────────────────────────────── -->
-    <header class="topnav" id="topNav">
-        <div class="topnav-left">
-            <div class="logo">
-                <div class="logo-icon"><i class="fa-solid fa-cube"></i></div>
-                <span>Stellar<span class="logo-thin">Mint</span></span>
-            </div>
-            <nav class="nav-tabs" id="navTabs">
-                <a class="nav-tab active" data-page="dashboard" href="#"><i class="fa-solid fa-grid-2"></i> Dashboard</a>
-                <a class="nav-tab" data-page="activity" href="#"><i class="fa-solid fa-wave-square"></i> Activity Feed</a>
-                <a class="nav-tab" data-page="txcenter" href="#"><i class="fa-solid fa-clock-rotate-left"></i> Tx Center</a>
-                <a class="nav-tab" data-page="analytics" href="#"><i class="fa-solid fa-chart-line"></i> Analytics</a>
-                <a class="nav-tab" data-page="settings" href="#"><i class="fa-solid fa-gear"></i> Settings</a>
-            </nav>
-        </div>
-        <div class="topnav-right">
-            <!-- Network Selector -->
-            <div class="network-selector" id="networkSelector">
-                <div class="network-current" id="networkCurrent">
-                    <span class="network-dot testnet"></span>
-                    <span id="networkLabel">Testnet</span>
-                    <i class="fa-solid fa-chevron-down" id="networkChevron"></i>
-                </div>
-                <div class="network-dropdown hidden" id="networkDropdown">
-                    <button class="network-opt active" data-net="testnet">
-                        <span class="network-dot testnet"></span> Testnet
-                    </button>
-                    <button class="network-opt" data-net="mainnet">
-                        <span class="network-dot mainnet"></span> Mainnet
-                    </button>
-                    <button class="network-opt" data-net="local">
-                        <span class="network-dot local"></span> Local
-                    </button>
-                </div>
-            </div>
-
-            <!-- Wallet Button -->
-            <button class="wallet-btn" id="connectWalletBtn">
-                <i class="fa-solid fa-wallet"></i>
-                <span id="walletStatusText">Connect Wallet</span>
-            </button>
-
-            <!-- Disconnect Icon (shown when connected) -->
-            <button class="disconnect-btn hidden" id="disconnectBtn" title="Disconnect Wallet">
-                <i class="fa-solid fa-right-from-bracket"></i>
-            </button>
-        </div>
-    </header>
-
-    <!-- ── PAGES ──────────────────────────────────── -->
-    <main class="main-content">
-
-        <!-- ── DASHBOARD PAGE ── -->
-        <section class="page active" id="page-dashboard">
-
-            <div class="page-header">
-                <div>
-                    <h1 class="page-title">Dashboard</h1>
-                    <p class="page-sub">Mint & manage your Stellar NFTs on Soroban</p>
-                </div>
-                <div class="header-stats">
-                    <div class="stat-pill"><i class="fa-solid fa-layer-group"></i> Total Supply: <strong id="totalSupplyVal">2</strong></div>
-                </div>
-            </div>
-
-            <!-- Stats Row -->
-            <div class="stats-row">
-                <div class="stat-card">
-                    <div class="stat-icon purple"><i class="fa-solid fa-fire-flame-curved"></i></div>
-                    <div>
-                        <p class="stat-label">Total Minted</p>
-                        <h3 class="stat-value" id="statMinted">2</h3>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon teal"><i class="fa-solid fa-arrow-right-arrow-left"></i></div>
-                    <div>
-                        <p class="stat-label">Transfers</p>
-                        <h3 class="stat-value" id="statTransfers">0</h3>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon orange"><i class="fa-solid fa-trash-can"></i></div>
-                    <div>
-                        <p class="stat-label">Burned</p>
-                        <h3 class="stat-value" id="statBurned">0</h3>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon green"><i class="fa-solid fa-wallet"></i></div>
-                    <div>
-                        <p class="stat-label">Wallet</p>
-                        <h3 class="stat-value" id="statWallet" style="font-size: 0.9rem;">Not Connected</h3>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Action Cards -->
-            <div class="action-grid">
-
-                <!-- Mint Card -->
-                <div class="action-card">
-                    <div class="action-card-header">
-                        <div class="action-icon purple"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
-                        <h2>Mint NFT</h2>
-                    </div>
-                    <form id="mintForm">
-                        <div class="form-group">
-                            <label for="nftName">Asset Name</label>
-                            <input type="text" id="nftName" placeholder="e.g. Astro Kitty #001" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="tokenId">Token ID</label>
-                            <input type="number" id="tokenId" placeholder="e.g. 1337" min="1" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="nftMetadata">Metadata Hash (SHA-256)</label>
-                            <input type="text" id="nftMetadata" placeholder="64-char hex string" pattern="[a-fA-F0-9]{64}" required>
-                        </div>
-                        <button type="submit" class="action-btn purple-btn">
-                            <i class="fa-solid fa-hammer"></i> Mint NFT
-                        </button>
-                    </form>
-                </div>
-
-                <!-- Transfer Card -->
-                <div class="action-card">
-                    <div class="action-card-header">
-                        <div class="action-icon teal"><i class="fa-solid fa-paper-plane"></i></div>
-                        <h2>Transfer</h2>
-                    </div>
-                    <form id="transferForm">
-                        <div class="form-group">
-                            <label for="transferTokenId">Token ID</label>
-                            <input type="number" id="transferTokenId" placeholder="e.g. 1337" min="1" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="receiverAddress">Recipient Public Key</label>
-                            <input type="text" id="receiverAddress" placeholder="G..." required>
-                        </div>
-                        <button type="submit" class="action-btn teal-btn">
-                            <i class="fa-solid fa-arrow-right"></i> Send Asset
-                        </button>
-                    </form>
-                </div>
-
-                <!-- Burn Card -->
-                <div class="action-card">
-                    <div class="action-card-header">
-                        <div class="action-icon orange"><i class="fa-solid fa-fire"></i></div>
-                        <h2>Burn NFT</h2>
-                    </div>
-                    <form id="burnForm">
-                        <div class="form-group">
-                            <label for="burnTokenId">Token ID to Burn</label>
-                            <input type="number" id="burnTokenId" placeholder="e.g. 1337" min="1" required>
-                        </div>
-                        <div class="burn-warning">
-                            <i class="fa-solid fa-triangle-exclamation"></i>
-                            This action is permanent and cannot be undone.
-                        </div>
-                        <button type="submit" class="action-btn orange-btn">
-                            <i class="fa-solid fa-trash-can"></i> Burn NFT
-                        </button>
-                    </form>
-                </div>
-
-                <!-- Lookup Card -->
-                <div class="action-card">
-                    <div class="action-card-header">
-                        <div class="action-icon green"><i class="fa-solid fa-magnifying-glass"></i></div>
-                        <h2>Lookup NFT</h2>
-                    </div>
-                    <form id="queryForm">
-                        <div class="form-group">
-                            <label for="queryTokenId">Token ID</label>
-                            <div class="input-row">
-                                <input type="number" id="queryTokenId" placeholder="e.g. 1337" min="1" required>
-                                <button type="submit" class="action-btn green-btn sm-btn">Query</button>
-                            </div>
-                        </div>
-                    </form>
-                    <div id="queryResult" class="query-result hidden">
-                        <div class="qr-row">
-                            <span class="qr-label">Name</span>
-                            <span id="resName" class="qr-value">—</span>
-                        </div>
-                        <div class="qr-row">
-                            <span class="qr-label">Token ID</span>
-                            <span id="resId" class="qr-value">—</span>
-                        </div>
-                        <div class="qr-row">
-                            <span class="qr-label">Owner</span>
-                            <span id="resOwner" class="qr-value truncate-val">—</span>
-                        </div>
-                        <div class="qr-row">
-                            <span class="qr-label">Metadata</span>
-                            <span id="resMeta" class="qr-value truncate-val">—</span>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- Contract Info -->
-            <div class="contract-bar">
-                <div class="contract-item">
-                    <span class="ci-label"><i class="fa-solid fa-file-contract"></i> NFT Contract</span>
-                    <span class="ci-val truncate-val" id="contractIdText">CDVCJKX6FJFOOQ76BJ365SJS6OTGH2ZQF6QVJO5YGGR37QBJ3I2QB7PZ</span>
-                </div>
-                <div class="contract-item">
-                    <span class="ci-label"><i class="fa-solid fa-star"></i> Latest Mint</span>
-                    <span class="ci-val" id="latestNftText">None yet</span>
-                </div>
-            </div>
-        </section>
-
-        <!-- ── ACTIVITY FEED PAGE ── -->
-        <section class="page hidden" id="page-activity">
-            <div class="page-header">
-                <div>
-                    <h1 class="page-title">Activity Feed</h1>
-                    <p class="page-sub">Live stream of all NFT operations</p>
-                </div>
-            </div>
-            <div class="logs-container" id="logsFeed">
-                <div class="empty-state"><i class="fa-regular fa-clock"></i><br>No activity yet. Start minting!</div>
-            </div>
-        </section>
-
-        <!-- ── TX CENTER PAGE ── -->
-        <section class="page hidden" id="page-txcenter">
-            <div class="page-header">
-                <div>
-                    <h1 class="page-title">Transaction Center</h1>
-                    <p class="page-sub">Track on-chain transaction history</p>
-                </div>
-            </div>
-            <div class="tx-table-wrap">
-                <table class="tx-table">
-                    <thead>
-                        <tr><th>Time</th><th>Type</th><th>Token ID</th><th>Details</th><th>Status</th></tr>
-                    </thead>
-                    <tbody id="txTableBody">
-                        <tr><td colspan="5" class="empty-state">No transactions recorded yet.</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-        <!-- ── ANALYTICS PAGE ── -->
-        <section class="page hidden" id="page-analytics">
-            <div class="page-header">
-                <div>
-                    <h1 class="page-title">Analytics</h1>
-                    <p class="page-sub">Collection growth and usage metrics</p>
-                </div>
-            </div>
-            <div class="analytics-grid">
-                <div class="analytics-card">
-                    <h3>NFTs Minted</h3>
-                    <div class="big-number" id="anMinted">2</div>
-                    <p class="an-sub">Total supply on-chain</p>
-                </div>
-                <div class="analytics-card">
-                    <h3>Total Transfers</h3>
-                    <div class="big-number" id="anTransfers">0</div>
-                    <p class="an-sub">Ownership changes</p>
-                </div>
-                <div class="analytics-card">
-                    <h3>Total Burned</h3>
-                    <div class="big-number" id="anBurned">0</div>
-                    <p class="an-sub">Tokens destroyed</p>
-                </div>
-                <div class="analytics-card">
-                    <h3>Active Network</h3>
-                    <div class="big-number network-display" id="anNetwork">Testnet</div>
-                    <p class="an-sub">Current blockchain network</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- ── SETTINGS PAGE ── -->
-        <section class="page hidden" id="page-settings">
-            <div class="page-header">
-                <div>
-                    <h1 class="page-title">Settings</h1>
-                    <p class="page-sub">Platform configuration</p>
-                </div>
-            </div>
-            <div class="settings-grid">
-                <div class="settings-card">
-                    <h3><i class="fa-solid fa-file-contract"></i> Contract Address</h3>
-                    <p class="settings-desc">The deployed NFT smart contract address on Soroban.</p>
-                    <input type="text" class="settings-input" id="settingsContractId" value="CDVCJKX6FJFOOQ76BJ365SJS6OTGH2ZQF6QVJO5YGGR37QBJ3I2QB7PZ">
-                    <button class="action-btn purple-btn" onclick="applyContractSettings()"><i class="fa-solid fa-save"></i> Save</button>
-                </div>
-                <div class="settings-card">
-                    <h3><i class="fa-solid fa-network-wired"></i> Network Configuration</h3>
-                    <p class="settings-desc">Current active blockchain network.</p>
-                    <div class="settings-net-btns">
-                        <button class="net-choice active" data-net="testnet" onclick="selectNetwork(this, 'testnet')">Testnet</button>
-                        <button class="net-choice" data-net="mainnet" onclick="selectNetwork(this, 'mainnet')">Mainnet</button>
-                        <button class="net-choice" data-net="local" onclick="selectNetwork(this, 'local')">Local</button>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-    </main>
-
-    <!-- ── WALLET MODAL ─────────────────────────── -->
+    <!-- ══ WALLET MODAL ════════════════════════════════ -->
     <div id="walletModal" class="modal-overlay hidden">
         <div class="modal-box">
-            <div class="modal-title">
+            <div class="modal-top">
                 <div>
                     <h2>Select a Wallet</h2>
-                    <p>Choose a supported Stellar wallet to connect.</p>
+                    <p>Choose a supported Stellar wallet to connect</p>
                 </div>
-                <button id="closeModalBtn" class="modal-close">Close</button>
+                <button id="closeModalBtn"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="wallet-list">
-                <button class="wallet-row" data-wallet="freighter">
-                    <div class="wallet-avatar f-color">F</div>
-                    <div class="wallet-row-info">
-                        <h3>Freighter Wallet</h3>
-                        <p>Official Stellar Extension</p>
+                <button class="w-row" data-wallet="freighter">
+                    <div class="w-avatar f-av">F</div>
+                    <div class="w-info">
+                        <strong>Freighter Wallet</strong>
+                        <span>Official Stellar Extension</span>
                     </div>
-                    <i class="fa-solid fa-chevron-right wallet-chevron"></i>
+                    <i class="fa-solid fa-chevron-right"></i>
                 </button>
-                <button class="wallet-row" data-wallet="albedo">
-                    <div class="wallet-avatar a-color">A</div>
-                    <div class="wallet-row-info">
-                        <h3>Albedo Wallet</h3>
-                        <p>Web-based Signer</p>
+                <button class="w-row" data-wallet="albedo">
+                    <div class="w-avatar a-av">A</div>
+                    <div class="w-info">
+                        <strong>Albedo Wallet</strong>
+                        <span>Web-based Signer</span>
                     </div>
-                    <i class="fa-solid fa-chevron-right wallet-chevron"></i>
+                    <i class="fa-solid fa-chevron-right"></i>
                 </button>
-                <button class="wallet-row" data-wallet="xbull">
-                    <div class="wallet-avatar x-color">X</div>
-                    <div class="wallet-row-info">
-                        <h3>xBull Wallet</h3>
-                        <p>Multi-chain Wallet</p>
+                <button class="w-row" data-wallet="xbull">
+                    <div class="w-avatar x-av">X</div>
+                    <div class="w-info">
+                        <strong>xBull Wallet</strong>
+                        <span>Multi-chain Wallet</span>
                     </div>
-                    <i class="fa-solid fa-chevron-right wallet-chevron"></i>
+                    <i class="fa-solid fa-chevron-right"></i>
                 </button>
-                <button class="wallet-row" data-wallet="lobstr">
-                    <div class="wallet-avatar l-color">L</div>
-                    <div class="wallet-row-info">
-                        <h3>LOBSTR / Public Key</h3>
-                        <p>Enter key + password to verify</p>
+                <button class="w-row" data-wallet="lobstr">
+                    <div class="w-avatar l-av">L</div>
+                    <div class="w-info">
+                        <strong>LOBSTR Wallet</strong>
+                        <span>Enter public key + password</span>
                     </div>
-                    <i class="fa-solid fa-chevron-right wallet-chevron"></i>
+                    <i class="fa-solid fa-chevron-right"></i>
                 </button>
             </div>
-
-            <!-- LOBSTR manual key form -->
             <div id="lobstrForm" class="lobstr-form hidden">
-                <hr class="modal-divider">
-                <div class="form-group">
-                    <label for="stellarPublicKey">Stellar Public Key (G...)</label>
+                <div class="modal-divider"></div>
+                <div class="fg">
+                    <label>Stellar Public Key</label>
                     <input type="text" id="stellarPublicKey" placeholder="GDXXX...">
                 </div>
-                <div class="form-group">
-                    <label for="walletPassword">Wallet Password</label>
+                <div class="fg">
+                    <label>Wallet Password</label>
                     <input type="password" id="walletPassword" placeholder="••••••••">
                 </div>
-                <button id="submitKeyAuthBtn" class="action-btn purple-btn">
-                    <i class="fa-solid fa-lock-open"></i> Verify & Connect
+                <button id="submitKeyAuthBtn" class="op-btn purple-btn">
+                    <i class="fa-solid fa-unlock"></i> Verify & Connect
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Toast container -->
+    <!-- Toast -->
     <div id="toastContainer" class="toast-container"></div>
 
     <script src="app.js"></script>
