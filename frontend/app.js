@@ -202,41 +202,137 @@ $$('.w-row').forEach(row => {
         }
 
         $('walletModal').classList.add('hidden');
+        showWalletConnecting(type);
 
         if (type === 'freighter') {
+            // ── Real Freighter Extension ───────────────────────────
             if (typeof window.freighterApi !== 'undefined') {
                 try {
+                    const isAllowed = await window.freighterApi.isAllowed();
+                    if (!isAllowed) {
+                        await window.freighterApi.requestAccess();
+                    }
                     const pk = await window.freighterApi.getPublicKey();
-                    setConnected(pk, 'Freighter');
-                } catch { promptPassword('Freighter'); }
-            } else { promptPassword('Freighter'); }
+                    if (pk && pk.startsWith('G')) {
+                        setConnected(pk, 'Freighter');
+                    } else {
+                        showWalletError('Freighter', 'Could not retrieve public key. Please unlock your wallet and try again.');
+                    }
+                } catch (err) {
+                    showWalletError('Freighter', err?.message || 'Connection was rejected or cancelled.');
+                }
+            } else {
+                showInstallGuide('Freighter', 'https://www.freighter.app', 'freighter-install');
+            }
         }
 
         else if (type === 'albedo') {
-            if (typeof window.albedo !== 'undefined') {
-                try {
-                    const res = await window.albedo.publicKey({});
+            // ── Real Albedo Web Signer ─────────────────────────────
+            try {
+                if (typeof window.albedo === 'undefined') {
+                    // Dynamically load Albedo if not available
+                    await loadScript('https://albedo.link/albedo.js');
+                }
+                const res = await window.albedo.publicKey({ require_existing: false });
+                if (res && res.pubkey) {
                     setConnected(res.pubkey, 'Albedo');
-                } catch { promptPassword('Albedo'); }
-            } else { promptPassword('Albedo'); }
+                } else {
+                    showWalletError('Albedo', 'Could not retrieve public key from Albedo.');
+                }
+            } catch (err) {
+                showWalletError('Albedo', err?.message || 'Connection was rejected or cancelled.');
+            }
         }
 
         else if (type === 'xbull') {
+            // ── Real xBull Wallet ──────────────────────────────────
             if (typeof window.xBullSDK !== 'undefined') {
                 try {
-                    const pk = await window.xBullSDK.getPublicKey();
-                    setConnected(pk, 'xBull');
-                } catch { promptPassword('xBull'); }
-            } else { promptPassword('xBull'); }
+                    const xBull = new window.xBullSDK();
+                    const pk = await xBull.getPublicKey();
+                    if (pk && pk.startsWith('G')) {
+                        setConnected(pk, 'xBull');
+                    } else {
+                        showWalletError('xBull', 'Could not retrieve public key from xBull wallet.');
+                    }
+                } catch (err) {
+                    showWalletError('xBull', err?.message || 'Connection was rejected or cancelled.');
+                }
+            } else {
+                showInstallGuide('xBull', 'https://xbull.app', 'xbull-install');
+            }
         }
     });
 });
 
+// ── Helper: show a connecting spinner toast ────────────────────────
+function showWalletConnecting(type) {
+    showToast(`Connecting to ${type}…`, 'info');
+}
+
+// ── Helper: show wallet error ──────────────────────────────────────
+function showWalletError(type, msg) {
+    showToast(`${type}: ${msg}`, 'error');
+    addLog(`${type} connection failed: ${msg}`, 'info');
+}
+
+// ── Helper: show install guide modal ──────────────────────────────
+function showInstallGuide(type, url, id) {
+    // Remove any existing install guide
+    const existing = $(id);
+    if (existing) existing.remove();
+
+    const icons = {
+        'Freighter': '🚀',
+        'xBull': '✦',
+    };
+
+    const div = document.createElement('div');
+    div.id = id;
+    div.className = 'modal-overlay';
+    div.style.zIndex = '3000';
+    div.innerHTML = `
+        <div class="modal-box" style="text-align:center; padding: 2rem;">
+            <div style="font-size:2.5rem; margin-bottom: 0.5rem;">${icons[type] || '👛'}</div>
+            <h2 style="font-family: var(--font-head); margin-bottom: 0.4rem;">${type} Not Installed</h2>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; line-height: 1.5;">
+                The <strong>${type}</strong> browser extension is required to connect your real wallet.<br>
+                Install it and then refresh this page.
+            </p>
+            <a href="${url}" target="_blank" rel="noopener noreferrer"
+               style="display:inline-flex; align-items:center; gap:0.5rem; background: linear-gradient(135deg, var(--purple), #6d28d9); color:#fff; padding:0.75rem 1.5rem; border-radius: var(--radius); font-weight:700; font-size:0.9rem; text-decoration:none; margin-bottom: 0.75rem;">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> Install ${type}
+            </a>
+            <br>
+            <button onclick="document.getElementById('${id}').remove()"
+                    style="margin-top:0.75rem; background:var(--surface-2); border:1px solid var(--border); color:var(--text); padding:0.5rem 1.25rem; border-radius: var(--radius-sm); font-weight:600; font-size:0.84rem;">
+                Cancel
+            </button>
+        </div>
+    `;
+    div.addEventListener('click', (e) => { if (e.target === div) div.remove(); });
+    document.body.appendChild(div);
+}
+
+// ── Helper: dynamically load a script ─────────────────────────────
+function loadScript(src) {
+    return new Promise((resolve, reject) => {
+        if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+        const s = document.createElement('script');
+        s.src = src;
+        s.onload = resolve;
+        s.onerror = () => reject(new Error(`Failed to load ${src}`));
+        document.head.appendChild(s);
+    });
+}
+
+// ── LOBSTR — manual public key entry ──────────────────────────────
 $('submitKeyAuthBtn').addEventListener('click', () => {
-    const pk   = $('stellarPublicKey').value.trim();
-    const pass = $('walletPassword').value;
-    if (!pk.startsWith('G') || pk.length < 50) { showToast('Invalid Stellar public key', 'error'); return; }
-    if (pass.length < 4) { showToast('Password must be at least 4 characters', 'error'); return; }
+    const pk = $('stellarPublicKey').value.trim();
+    if (!pk.startsWith('G') || pk.length < 50) {
+        showToast('Invalid Stellar public key — must start with G and be 56 chars', 'error');
+        return;
+    }
     $('walletModal').classList.add('hidden');
     setConnected(pk, 'LOBSTR');
     $('stellarPublicKey').value = '';
@@ -255,79 +351,41 @@ $('disconnectBtn').addEventListener('click', () => {
     addLog('Wallet disconnected.', 'info');
 });
 
-let activeSimType = null;
-
-function promptPassword(type) {
-    activeSimType = type;
-    
-    // Customize modal appearance based on wallet choice
-    const fpLogo = document.querySelector('#freighterSimModal .fp-logo img');
-    const fpTitle = document.querySelector('#freighterSimModal .fp-logo span');
-    
-    if (type === 'Freighter') {
-        fpLogo.src = 'https://avatars.githubusercontent.com/u/104169733?s=200&v=4';
-        fpTitle.textContent = 'Freighter';
-    } else if (type === 'Albedo') {
-        fpLogo.src = 'https://albedo.link/favicon.ico';
-        fpTitle.textContent = 'Albedo';
-    } else if (type === 'xBull') {
-        fpLogo.src = 'https://xbull.app/img/logo.png';
-        fpTitle.textContent = 'xBull';
-    }
-    
-    // Set network label
-    const formattedNet = activeNetwork === 'testnet' ? 'Test Net' : activeNetwork === 'mainnet' ? 'Public Net' : 'Local Net';
-    $('fpSelectedNetworkDisplay').textContent = formattedNet;
-    
-    // Pre-fill fields
-    const defaultAddr = $('fpSimulatedAddress').value;
-    const shortAddr = `${defaultAddr.substring(0, 5)}...${defaultAddr.substring(defaultAddr.length - 4)}`;
-    $('fpSelectedAddrDisplay').textContent = shortAddr;
-    $('fpSimulatedPassword').value = '';
-    
-    // Display modal
-    $('freighterSimModal').classList.remove('hidden');
-}
-
-// Simulated Freighter popup listeners
-$('closeFreighterSimBtn').addEventListener('click', () => {
-    $('freighterSimModal').classList.add('hidden');
-    showToast(`${activeSimType} connection cancelled`, 'info');
-});
-
-$('cancelFreighterSimBtn').addEventListener('click', () => {
-    $('freighterSimModal').classList.add('hidden');
-    showToast(`${activeSimType} connection cancelled`, 'info');
-});
-
-$('fpSimulatedAddress').addEventListener('change', (e) => {
-    const addr = e.target.value;
-    const shortAddr = `${addr.substring(0, 5)}...${addr.substring(addr.length - 4)}`;
-    $('fpSelectedAddrDisplay').textContent = shortAddr;
-});
-
-$('confirmFreighterSimBtn').addEventListener('click', () => {
-    const selectedAddr = $('fpSimulatedAddress').value;
-    $('freighterSimModal').classList.add('hidden');
-    setConnected(selectedAddr, activeSimType);
-});
-
 function setConnected(pk, type) {
     walletAddress = pk;
     walletType    = type;
-    const short = `${pk.substring(0, 5)}...${pk.substring(pk.length - 4)}`;
+    const short = `${pk.substring(0, 6)}...${pk.substring(pk.length - 4)}`;
     $('walletStatusText').textContent = `${type}: ${short}`;
     $('connectWalletBtn').classList.add('connected');
     $('disconnectBtn').classList.remove('hidden');
     $('walletAddrDisplay').textContent = pk;
-    // Simulate balance
-    const fakeBalance = (Math.random() * 9000 + 100).toFixed(2);
-    $('kpiBalance').textContent = `${fakeBalance} XLM`;
+    $('kpiBalance').textContent = 'Fetching…';
+    fetchXlmBalance(pk);
     document.body.classList.remove('landing-active');
-    showToast(`Connected to ${type}!`, 'success');
+    showToast(`✅ Connected to ${type}!`, 'success');
     addLog(`Wallet connected via ${type}: ${pk.substring(0, 12)}...`, 'success');
-    pushNotif('👛 Wallet Connected', `${type} wallet: ${short}`);
+    pushNotif('👛 Wallet Connected', `${type}: ${short}`);
 }
+
+// ── Fetch real XLM balance from Horizon ───────────────────────────
+async function fetchXlmBalance(pk) {
+    const networks = {
+        testnet: 'https://horizon-testnet.stellar.org',
+        mainnet: 'https://horizon.stellar.org',
+        local:   'https://horizon-testnet.stellar.org',
+    };
+    const horizon = networks[activeNetwork] || networks.testnet;
+    try {
+        const res  = await fetch(`${horizon}/accounts/${pk}`);
+        if (!res.ok) throw new Error('Account not found');
+        const data = await res.json();
+        const xlm  = data.balances?.find(b => b.asset_type === 'native');
+        $('kpiBalance').textContent = xlm ? `${parseFloat(xlm.balance).toFixed(2)} XLM` : '0 XLM';
+    } catch {
+        $('kpiBalance').textContent = 'N/A';
+    }
+}
+
 
 // ── Mint NFT ──────────────────────────────────────────────────────────
 $('mintForm').addEventListener('submit', (e) => {
