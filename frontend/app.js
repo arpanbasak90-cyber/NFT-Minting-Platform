@@ -205,30 +205,31 @@ $$('.w-row').forEach(row => {
         showWalletConnecting(type);
 
         if (type === 'freighter') {
-            // ── Real Freighter Extension ───────────────────────────────
-            // Extensions inject window.freighterApi with a slight delay after
-            // page load. We poll for up to 4 seconds before concluding not installed.
-            showToast('Looking for Freighter extension…', 'info');
-            const api = await waitForFreighter(4000);
-
-            if (api) {
-                try {
-                    const pk = await api.getPublicKey();
+            // ── Real Freighter Wallet via @stellar/freighter-api ───────
+            showToast('Connecting via @stellar/freighter-api…', 'info');
+            try {
+                if (window.SorobanIntegration && window.SorobanIntegration.connectFreighterWallet) {
+                    const pk = await window.SorobanIntegration.connectFreighterWallet();
                     if (pk && pk.startsWith('G')) {
                         setConnected(pk, 'Freighter');
                     } else {
-                        showWalletError('Freighter', 'Could not get public key. Please unlock your Freighter wallet and try again.');
+                        showWalletError('Freighter', 'Could not get public key from Freighter.');
                     }
-                } catch (err) {
-                    const msg = (err?.message || String(err)).toLowerCase();
-                    if (msg.includes('denied') || msg.includes('reject') || msg.includes('cancel') || msg.includes('user')) {
-                        showWalletError('Freighter', 'Connection cancelled — please approve in the Freighter popup.');
+                } else {
+                    const api = await waitForFreighter(4000);
+                    if (api) {
+                        const pk = await api.getPublicKey();
+                        if (pk && pk.startsWith('G')) {
+                            setConnected(pk, 'Freighter');
+                        } else {
+                            showWalletError('Freighter', 'Could not get public key from Freighter.');
+                        }
                     } else {
-                        showWalletError('Freighter', err?.message || 'Connection failed. Make sure Freighter is unlocked.');
+                        showInstallGuide('Freighter', 'https://www.freighter.app', 'freighter-install');
                     }
                 }
-            } else {
-                showInstallGuide('Freighter', 'https://www.freighter.app', 'freighter-install');
+            } catch (err) {
+                showWalletError('Freighter', err?.message || 'Freighter connection failed.');
             }
         }
 
@@ -457,6 +458,11 @@ $('mintForm').addEventListener('submit', (e) => {
     refreshStats();
     renderGallery();
 
+    // Invoke Soroban smart contract function 'mint' matching lib.rs
+    if (window.SorobanIntegration && window.SorobanIntegration.mint) {
+        window.SorobanIntegration.mint(walletAddress, id, meta, name);
+    }
+
     const msg = `Minted "${name}" (#${id}) with ${royalty}% royalty`;
     $('latestNftText').textContent = `"${name}" (#${id})`;
     showToast(msg, 'success');
@@ -486,6 +492,11 @@ $('transferForm').addEventListener('submit', (e) => {
     refreshStats();
     renderGallery();
 
+    // Invoke Soroban smart contract function 'transfer' matching lib.rs
+    if (window.SorobanIntegration && window.SorobanIntegration.transfer) {
+        window.SorobanIntegration.transfer(walletAddress, to, id);
+    }
+
     const detail = note ? `${to.substring(0, 8)}... — ${note}` : `To: ${to.substring(0, 8)}...`;
     const msg = `Transferred #${id} → ${to.substring(0, 8)}...`;
     showToast(msg, 'success');
@@ -509,6 +520,11 @@ $('burnForm').addEventListener('submit', (e) => {
     refreshStats();
     renderGallery();
 
+    // Invoke Soroban smart contract function 'burn' matching lib.rs
+    if (window.SorobanIntegration && window.SorobanIntegration.burn) {
+        window.SorobanIntegration.burn(walletAddress, id);
+    }
+
     const msg = `Burned NFT "${nft.name}" (#${id})`;
     showToast(msg, 'success');
     addLog(msg, 'success');
@@ -524,6 +540,12 @@ $('queryForm').addEventListener('submit', (e) => {
     const box = $('queryResult');
 
     if (!nftStorage.has(id)) { showToast(`NFT #${id} not found`, 'error'); box.classList.add('hidden'); return; }
+
+    // Invoke Soroban smart contract functions 'get_nft' and 'get_owner' matching lib.rs
+    if (window.SorobanIntegration) {
+        if (window.SorobanIntegration.get_nft) window.SorobanIntegration.get_nft(id);
+        if (window.SorobanIntegration.get_owner) window.SorobanIntegration.get_owner(id);
+    }
 
     const nft = nftStorage.get(id);
     $('resName').textContent    = nft.name;
@@ -679,6 +701,11 @@ function refreshStats() {
     const total = stats.minted;
     const txs   = stats.transfers;
     const burns = stats.burned;
+
+    // Invoke Soroban smart contract function 'total_supply' matching lib.rs
+    if (window.SorobanIntegration && window.SorobanIntegration.total_supply) {
+        window.SorobanIntegration.total_supply();
+    }
 
     // KPI
     $('kpiMinted').textContent    = total;
