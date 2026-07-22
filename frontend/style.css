@@ -165,6 +165,7 @@ body:not(.landing-active) .landing-overlay {
     line-height: 1.15;
     background: linear-gradient(135deg, var(--text) 30%, var(--text-muted) 100%);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -285,6 +286,7 @@ body:not(.landing-active) .landing-overlay {
     font-style: normal;
     background: linear-gradient(90deg, var(--purple), var(--teal));
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 .brand-tag {
