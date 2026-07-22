@@ -26,6 +26,13 @@ const $$ = sel => document.querySelectorAll(sel);
 
 // ── Init ──────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
+    // Pre-load contract address from soroban.js
+    if (window.SorobanIntegration && window.SorobanIntegration.CONTRACT_ID) {
+        contractId = window.SorobanIntegration.CONTRACT_ID;
+        $('contractIdText').textContent = contractId;
+        $('settingsContractId').value   = contractId;
+    }
+
     stats.minted = nftStorage.size;
     refreshStats();
     renderGallery();
@@ -440,8 +447,24 @@ async function fetchXlmBalance(pk) {
 }
 
 
+// ── Helper: Set form loading state ───────────────────────────────
+function setFormLoading(formId, isLoading, loadingText = "Processing...") {
+    const form = $(formId);
+    if (!form) return;
+    const btn = form.querySelector('button[type="submit"]');
+    if (!btn) return;
+    if (isLoading) {
+        btn.disabled = true;
+        btn.dataset.originalHtml = btn.innerHTML;
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${loadingText}`;
+    } else {
+        btn.disabled = false;
+        btn.innerHTML = btn.dataset.originalHtml || btn.innerHTML;
+    }
+}
+
 // ── Mint NFT ──────────────────────────────────────────────────────────
-$('mintForm').addEventListener('submit', (e) => {
+$('mintForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!walletAddress) { showToast('Connect a wallet first', 'error'); return; }
 
@@ -453,28 +476,43 @@ $('mintForm').addEventListener('submit', (e) => {
     if (nftStorage.has(id)) { showToast(`Token ID #${id} already exists!`, 'error'); return; }
     if (nftStorage.size >= collectionCap) { showToast(`Collection cap of ${collectionCap} reached!`, 'error'); return; }
 
-    nftStorage.set(id, { owner: walletAddress, token_id: id, name, royalty, metadata: meta });
-    stats.minted++;
-    refreshStats();
-    renderGallery();
+    setFormLoading('mintForm', true, 'Minting on Soroban...');
+    showToast('Preparing transaction...', 'info');
 
-    // Invoke Soroban smart contract function 'mint' matching lib.rs
-    if (window.SorobanIntegration && window.SorobanIntegration.mint) {
-        window.SorobanIntegration.mint(walletAddress, id, meta, name);
+    try {
+        if (window.SorobanIntegration && window.SorobanIntegration.mint) {
+            const txResult = await window.SorobanIntegration.mint(walletAddress, id, meta, name);
+            if (txResult && txResult.status === "SUCCESS") {
+                nftStorage.set(id, { owner: walletAddress, token_id: id, name, royalty, metadata: meta });
+                stats.minted++;
+                refreshStats();
+                renderGallery();
+
+                const msg = `Minted "${name}" (#${id}) with ${royalty}% royalty`;
+                $('latestNftText').textContent = `"${name}" (#${id})`;
+                showToast(`✅ ${msg} successfully!`, 'success');
+                addLog(msg, 'success');
+                recordTx('mint', id, `Tx: ${txResult.hash.substring(0, 8)}...`);
+                pushNotif('🎨 NFT Minted!', `"${name}" (Token #${id}) was minted successfully on Soroban.`);
+                e.target.reset();
+                randomizeMetaInput();
+            } else {
+                throw new Error("Transaction returned failure status");
+            }
+        } else {
+            throw new Error("Soroban integration not loaded");
+        }
+    } catch (err) {
+        console.error(err);
+        showToast(`Mint failed: ${err.message || err}`, 'error');
+        addLog(`Mint failed: ${err.message || err}`, 'error');
+    } finally {
+        setFormLoading('mintForm', false);
     }
-
-    const msg = `Minted "${name}" (#${id}) with ${royalty}% royalty`;
-    $('latestNftText').textContent = `"${name}" (#${id})`;
-    showToast(msg, 'success');
-    addLog(msg, 'success');
-    recordTx('mint', id, `By: ${walletAddress.substring(0, 8)}...`);
-    pushNotif('🎨 NFT Minted!', `"${name}" (Token #${id}) was minted successfully.`);
-    e.target.reset();
-    randomizeMetaInput();
 });
 
 // ── Transfer NFT ──────────────────────────────────────────────────────
-$('transferForm').addEventListener('submit', (e) => {
+$('transferForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!walletAddress) { showToast('Connect a wallet first', 'error'); return; }
 
@@ -485,29 +523,44 @@ $('transferForm').addEventListener('submit', (e) => {
     if (!to.startsWith('G') || to.length < 50) { showToast('Invalid recipient Stellar address', 'error'); return; }
     if (!nftStorage.has(id)) { showToast(`NFT #${id} not found`, 'error'); return; }
 
-    const nft = nftStorage.get(id);
-    nft.owner = to;
-    nftStorage.set(id, nft);
-    stats.transfers++;
-    refreshStats();
-    renderGallery();
+    setFormLoading('transferForm', true, 'Transferring on Soroban...');
+    showToast('Preparing transfer transaction...', 'info');
 
-    // Invoke Soroban smart contract function 'transfer' matching lib.rs
-    if (window.SorobanIntegration && window.SorobanIntegration.transfer) {
-        window.SorobanIntegration.transfer(walletAddress, to, id);
+    try {
+        if (window.SorobanIntegration && window.SorobanIntegration.transfer) {
+            const txResult = await window.SorobanIntegration.transfer(walletAddress, to, id);
+            if (txResult && txResult.status === "SUCCESS") {
+                const nft = nftStorage.get(id);
+                nft.owner = to;
+                nftStorage.set(id, nft);
+                stats.transfers++;
+                refreshStats();
+                renderGallery();
+
+                const detail = note ? `${to.substring(0, 8)}... — ${note}` : `To: ${to.substring(0, 8)}...`;
+                const msg = `Transferred #${id} → ${to.substring(0, 8)}...`;
+                showToast(msg, 'success');
+                addLog(msg, 'success');
+                recordTx('transfer', id, `Tx: ${txResult.hash.substring(0, 8)}...`);
+                pushNotif('🔄 Transfer Complete', `Token #${id} transferred to ${to.substring(0, 8)}...`);
+                e.target.reset();
+            } else {
+                throw new Error("Transaction returned failure status");
+            }
+        } else {
+            throw new Error("Soroban integration not loaded");
+        }
+    } catch (err) {
+        console.error(err);
+        showToast(`Transfer failed: ${err.message || err}`, 'error');
+        addLog(`Transfer failed: ${err.message || err}`, 'error');
+    } finally {
+        setFormLoading('transferForm', false);
     }
-
-    const detail = note ? `${to.substring(0, 8)}... — ${note}` : `To: ${to.substring(0, 8)}...`;
-    const msg = `Transferred #${id} → ${to.substring(0, 8)}...`;
-    showToast(msg, 'success');
-    addLog(msg, 'success');
-    recordTx('transfer', id, detail);
-    pushNotif('🔄 Transfer Complete', `Token #${id} transferred to ${to.substring(0, 8)}...`);
-    e.target.reset();
 });
 
 // ── Burn NFT ──────────────────────────────────────────────────────────
-$('burnForm').addEventListener('submit', (e) => {
+$('burnForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!walletAddress) { showToast('Connect a wallet first', 'error'); return; }
 
@@ -515,46 +568,82 @@ $('burnForm').addEventListener('submit', (e) => {
     if (!nftStorage.has(id)) { showToast(`NFT #${id} not found`, 'error'); return; }
 
     const nft = nftStorage.get(id);
-    nftStorage.delete(id);
-    stats.burned++;
-    refreshStats();
-    renderGallery();
 
-    // Invoke Soroban smart contract function 'burn' matching lib.rs
-    if (window.SorobanIntegration && window.SorobanIntegration.burn) {
-        window.SorobanIntegration.burn(walletAddress, id);
+    setFormLoading('burnForm', true, 'Burning on Soroban...');
+    showToast('Preparing burn transaction...', 'info');
+
+    try {
+        if (window.SorobanIntegration && window.SorobanIntegration.burn) {
+            const txResult = await window.SorobanIntegration.burn(walletAddress, id);
+            if (txResult && txResult.status === "SUCCESS") {
+                nftStorage.delete(id);
+                stats.burned++;
+                refreshStats();
+                renderGallery();
+
+                const msg = `Burned NFT "${nft.name}" (#${id})`;
+                showToast(msg, 'success');
+                addLog(msg, 'success');
+                recordTx('burn', id, `Tx: ${txResult.hash.substring(0, 8)}...`);
+                pushNotif('🔥 NFT Burned', `"${nft.name}" (#${id}) was permanently destroyed on Soroban.`);
+                e.target.reset();
+            } else {
+                throw new Error("Transaction returned failure status");
+            }
+        } else {
+            throw new Error("Soroban integration not loaded");
+        }
+    } catch (err) {
+        console.error(err);
+        showToast(`Burn failed: ${err.message || err}`, 'error');
+        addLog(`Burn failed: ${err.message || err}`, 'error');
+    } finally {
+        setFormLoading('burnForm', false);
     }
-
-    const msg = `Burned NFT "${nft.name}" (#${id})`;
-    showToast(msg, 'success');
-    addLog(msg, 'success');
-    recordTx('burn', id, 'Permanently Destroyed');
-    pushNotif('🔥 NFT Burned', `"${nft.name}" (#${id}) was permanently destroyed.`);
-    e.target.reset();
 });
 
 // ── Query NFT ─────────────────────────────────────────────────────────
-$('queryForm').addEventListener('submit', (e) => {
+$('queryForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const id  = parseInt($('queryTokenId').value);
     const box = $('queryResult');
 
-    if (!nftStorage.has(id)) { showToast(`NFT #${id} not found`, 'error'); box.classList.add('hidden'); return; }
+    setFormLoading('queryForm', true, 'Querying Soroban...');
+    box.classList.add('hidden');
 
-    // Invoke Soroban smart contract functions 'get_nft' and 'get_owner' matching lib.rs
-    if (window.SorobanIntegration) {
-        if (window.SorobanIntegration.get_nft) window.SorobanIntegration.get_nft(id);
-        if (window.SorobanIntegration.get_owner) window.SorobanIntegration.get_owner(id);
+    try {
+        if (window.SorobanIntegration && window.SorobanIntegration.get_nft) {
+            const nftData = await window.SorobanIntegration.get_nft(id);
+            if (nftData && nftData.status === "SUCCESS") {
+                // Update local storage to match chain truth
+                nftStorage.set(id, {
+                    owner: nftData.owner,
+                    token_id: nftData.token_id,
+                    name: nftData.name,
+                    royalty: 0,
+                    metadata: nftData.metadata
+                });
+                renderGallery();
+
+                $('resName').textContent    = nftData.name;
+                $('resId').textContent      = `#${nftData.token_id}`;
+                $('resOwner').textContent   = nftData.owner;
+                $('resRoyalty').textContent = `0%`;
+                $('resMeta').textContent    = nftData.metadata;
+                box.classList.remove('hidden');
+                showToast(`Found NFT #${id}: "${nftData.name}"`, 'success');
+            } else {
+                showToast(`NFT #${id} not found on the blockchain.`, 'error');
+            }
+        } else {
+            throw new Error("Soroban integration not loaded");
+        }
+    } catch (err) {
+        console.error(err);
+        showToast(`Query failed: ${err.message || err}`, 'error');
+    } finally {
+        setFormLoading('queryForm', false);
     }
-
-    const nft = nftStorage.get(id);
-    $('resName').textContent    = nft.name;
-    $('resId').textContent      = `#${nft.token_id}`;
-    $('resOwner').textContent   = nft.owner;
-    $('resRoyalty').textContent = `${nft.royalty}%`;
-    $('resMeta').textContent    = nft.metadata;
-    box.classList.remove('hidden');
-    showToast(`Found NFT #${id}: "${nft.name}"`, 'success');
 });
 
 $('copyQueryBtn')?.addEventListener('click', () => {
@@ -822,16 +911,41 @@ function simulateRpcLatency() {
     $('rpcDot').className = latency < 100 ? 'rpc-dot live' : 'rpc-dot dead';
 }
 
-// ── Regen metadata ────────────────────────────────────────────────────
+// ── Regen / SHA-256 metadata ──────────────────────────────────────────
 function randomizeMetaInput() {
     const hex = Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
     const inp = $('nftMetadata');
     if (inp) inp.value = hex;
 }
 
-$('regenMetaBtn')?.addEventListener('click', () => {
-    randomizeMetaInput();
-    showToast('New metadata hash generated!', 'info');
+/**
+ * Generate a real SHA-256 hash from user-provided text using SubtleCrypto.
+ * Falls back to random hex if SubtleCrypto is unavailable.
+ */
+async function generateSha256Hash(text) {
+    if (window.crypto && window.crypto.subtle) {
+        try {
+            const msgBuffer = new TextEncoder().encode(text);
+            const hashBuffer = await window.crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray  = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        } catch (e) {
+            console.warn('SubtleCrypto unavailable, using random hex:', e);
+        }
+    }
+    // Fallback: random hex
+    return Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+}
+
+$('regenMetaBtn')?.addEventListener('click', async () => {
+    const nameInput = $('nftName')?.value.trim();
+    const seed = nameInput
+        ? `${nameInput}-${Date.now()}-${Math.random()}`
+        : `${Date.now()}-${Math.random()}`;
+    const hash = await generateSha256Hash(seed);
+    const inp = $('nftMetadata');
+    if (inp) inp.value = hash;
+    showToast('SHA-256 metadata hash generated!', 'info');
 });
 
 // ── Toast Notifications ───────────────────────────────────────────────

@@ -1567,3 +1567,65 @@ input:checked + .toggle-slider::before { left: calc(100% - 21px); background: #f
     opacity: 0.9;
 }
 
+/* ── Enhanced Mobile Responsive (320px – 480px) ─────────────────── */
+@media (max-width: 480px) {
+    /* Landing page */
+    .landing-hero h1 { font-size: 1.8rem; line-height: 1.25; }
+    .landing-hero p  { font-size: 0.9rem; padding: 0 0.5rem; }
+    .hero-connect-btn { width: 100%; justify-content: center; font-size: 0.95rem; padding: 0.9rem 1.5rem; }
+    .hero-features { grid-template-columns: 1fr; gap: 0.75rem; }
+    .landing-header { padding: 1rem; }
+
+    /* Dashboard */
+    .page-head { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+    .page-head h1 { font-size: 1.35rem; }
+    .kpi-row { grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+    .kpi-card { padding: 1rem; }
+    .kpi-card h2 { font-size: 1.4rem; }
+    .ops-grid { grid-template-columns: 1fr; gap: 1rem; }
+    .ops-card { padding: 1rem; }
+    .info-bar { flex-direction: column; gap: 0.5rem; }
+    .ib-item { width: 100%; }
+
+    /* Topbar */
+    .topbar { padding: 0 0.75rem; gap: 0.5rem; }
+    .wallet-connect-btn span { display: none; }
+    .wallet-connect-btn { padding: 0.5rem 0.75rem; }
+
+    /* Gallery */
+    .gallery-grid { grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .gallery-card-body h3 { font-size: 0.8rem; }
+
+    /* Settings */
+    .settings-layout { grid-template-columns: 1fr; }
+    .sc-input { width: 100%; box-sizing: border-box; }
+
+    /* Template grid */
+    .template-grid { grid-template-columns: 1fr; }
+
+    /* Modal */
+    .modal-box { width: 95vw; max-width: 400px; padding: 1.25rem; }
+    .w-row { padding: 0.75rem; }
+
+    /* Tables */
+    .tx-table-wrap { overflow-x: auto; }
+    table { min-width: 480px; }
+}
+
+/* ── Tablet (481px – 768px) ─────────────────────────────────────── */
+@media (min-width: 481px) and (max-width: 768px) {
+    .landing-hero h1 { font-size: 2.2rem; }
+    .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    .ops-grid { grid-template-columns: 1fr; }
+    .gallery-grid { grid-template-columns: repeat(3, 1fr); }
+    .template-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ── Touch device improvements ──────────────────────────────────── */
+@media (hover: none) and (pointer: coarse) {
+    .op-btn, .w-row, .nav-item, .template-use-btn {
+        min-height: 44px; /* Apple HIG touch target */
+    }
+    .gallery-card:hover { transform: none; }
+    .kpi-card:hover { transform: none; }
+}

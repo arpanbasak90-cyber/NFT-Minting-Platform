@@ -3,7 +3,6 @@
 use soroban_sdk::{
     contract, contracterror, contractimpl, contracttype,
     Address, Env, Symbol, BytesN, String,
-    token,
 };
 
 // ─── Error Types ────────────────────────────────────────────────────────────
