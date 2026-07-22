@@ -102,7 +102,7 @@ jobs:
       - name: 🚀 Deploy NFT Contract to Testnet (dry-run)
         working-directory: ./contract
         env:
-          STELLAR_SECRET_KEY: ${{ secrets.STELLAR_SECRET_KEY }}
+          STELLAR_SECRET_KEY: ${{ secrets['STELLAR_SECRET_KEY'] }}
         run: |
           if [ -n "$STELLAR_SECRET_KEY" ]; then
             echo "Deploying to testnet..."
