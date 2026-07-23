@@ -15,9 +15,11 @@ A next-generation, production-ready **NFT Minting & Management Platform** built 
 | Resource | Link |
 |----------|------|
 | **Live App (Vercel)** | [nft-minting-platform-2.vercel.app](https://nft-minting-platform-2.vercel.app) |
-| **Video Demo** | https://youtu.be/sjhcaYZE47g?si=X77gL32_ty98eqHX
+
+| **Video Demo** | https://youtu.be/sjhcaYZE47g?si=X77gL32_ty98eqHX |
 
 | **GitHub Repository** | [github.com/arpanbasak90-cyber/NFT-Minting-Platform](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform) |
+
 | **Stellar Explorer** | [stellar.expert/explorer/testnet](https://stellar.expert/explorer/testnet) |
 
 ---
