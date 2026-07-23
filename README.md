@@ -23,19 +23,26 @@ A next-generation, production-ready **NFT Minting & Management Platform** built 
 
 ## 📸 Platform Screenshots
 
-![Screenshot 1](YOUR_IMAGE_URL_OR_PATH_1)
+<img width="1343" height="637" alt="new project ss 7" src="https://github.com/user-attachments/assets/80b5b92c-e732-4107-bd66-3262111a361c" />
 
-![Screenshot 2](YOUR_IMAGE_URL_OR_PATH_2)
 
-![Screenshot 3](YOUR_IMAGE_URL_OR_PATH_3)
+<img width="1354" height="648" alt="new project ss 1" src="https://github.com/user-attachments/assets/c47e158d-31a3-4a54-ae49-9661d068116e" />
 
-![Screenshot 4](YOUR_IMAGE_URL_OR_PATH_4)
 
-![Screenshot 5](YOUR_IMAGE_URL_OR_PATH_5)
+<img width="1345" height="634" alt="new project ss 2" src="https://github.com/user-attachments/assets/ce3c971f-9026-47a9-906d-726782be89a0" />
 
-![Screenshot 6](YOUR_IMAGE_URL_OR_PATH_6)
 
-![Screenshot 7](YOUR_IMAGE_URL_OR_PATH_7)
+<img width="1349" height="635" alt="new project ss 3" src="https://github.com/user-attachments/assets/1987fb34-4a63-42db-b119-60f489f0abc7" />
+
+
+<img width="1351" height="632" alt="new project ss 4" src="https://github.com/user-attachments/assets/2b662599-4a89-4e39-aaac-91e3e8c0f1cd" />
+
+
+<img width="1336" height="630" alt="new project ss 5" src="https://github.com/user-attachments/assets/397355ce-f8ba-4446-96fa-8d47acef7f68" />
+
+
+<img width="1350" height="624" alt="new project ss 6" src="https://github.com/user-attachments/assets/8be2f1f9-218a-4776-be78-207ccb1545c2" />
+
 
 ---
 
