@@ -23,17 +23,19 @@ A next-generation, production-ready **NFT Minting & Management Platform** built 
 
 ## 📸 Platform Screenshots
 
-| Dashboard | Activity Feed |
-|-----------|---------------|
-| ![Dashboard](YOUR_IMAGE_URL_OR_PATH_1) | ![Activity Feed](YOUR_IMAGE_URL_OR_PATH_2) |
+![Screenshot 1](YOUR_IMAGE_URL_OR_PATH_1)
 
-| Transaction Center | Analytics |
-|--------------------|-----------|
-| ![Transaction Center](YOUR_IMAGE_URL_OR_PATH_3) | ![Analytics](YOUR_IMAGE_URL_OR_PATH_4) |
+![Screenshot 2](YOUR_IMAGE_URL_OR_PATH_2)
 
-| Notifications |
-|---------------|
-| ![Notifications](YOUR_IMAGE_URL_OR_PATH_5) |
+![Screenshot 3](YOUR_IMAGE_URL_OR_PATH_3)
+
+![Screenshot 4](YOUR_IMAGE_URL_OR_PATH_4)
+
+![Screenshot 5](YOUR_IMAGE_URL_OR_PATH_5)
+
+![Screenshot 6](YOUR_IMAGE_URL_OR_PATH_6)
+
+![Screenshot 7](YOUR_IMAGE_URL_OR_PATH_7)
 
 ---
 
