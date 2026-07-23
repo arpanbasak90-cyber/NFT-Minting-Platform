@@ -600,14 +600,28 @@ $('queryForm').addEventListener('submit', async (e) => {
     const id  = parseInt($('queryTokenId').value);
     const box = $('queryResult');
 
-    setFormLoading('queryForm', true, 'Querying Soroban...');
+    setFormLoading('queryForm', true, 'Querying...');
     box.classList.add('hidden');
 
+    // 1. Check local storage first (always works)
+    if (nftStorage.has(id)) {
+        const local = nftStorage.get(id);
+        $('resName').textContent    = local.name;
+        $('resId').textContent      = `#${local.token_id}`;
+        $('resOwner').textContent   = local.owner;
+        $('resRoyalty').textContent = `${local.royalty || 0}%`;
+        $('resMeta').textContent    = local.metadata;
+        box.classList.remove('hidden');
+        showToast(`✅ Found NFT #${id}: "${local.name}"`, 'success');
+        setFormLoading('queryForm', false);
+        return;
+    }
+
+    // 2. Not found locally — try Soroban chain as fallback
     try {
         if (window.SorobanIntegration && window.SorobanIntegration.get_nft) {
             const nftData = await window.SorobanIntegration.get_nft(id);
-            if (nftData && nftData.status === "SUCCESS") {
-                // Update local storage to match chain truth
+            if (nftData && nftData.status === 'SUCCESS') {
                 nftStorage.set(id, {
                     owner: nftData.owner,
                     token_id: nftData.token_id,
@@ -616,27 +630,26 @@ $('queryForm').addEventListener('submit', async (e) => {
                     metadata: nftData.metadata
                 });
                 renderGallery();
-
                 $('resName').textContent    = nftData.name;
                 $('resId').textContent      = `#${nftData.token_id}`;
                 $('resOwner').textContent   = nftData.owner;
                 $('resRoyalty').textContent = `0%`;
                 $('resMeta').textContent    = nftData.metadata;
                 box.classList.remove('hidden');
-                showToast(`Found NFT #${id}: "${nftData.name}"`, 'success');
-            } else {
-                showToast(`NFT #${id} not found on the blockchain.`, 'error');
+                showToast(`✅ Found NFT #${id}: "${nftData.name}"`, 'success');
+                setFormLoading('queryForm', false);
+                return;
             }
-        } else {
-            throw new Error("Soroban integration not loaded");
         }
     } catch (err) {
-        console.error(err);
-        showToast(`Query failed: ${err.message || err}`, 'error');
-    } finally {
-        setFormLoading('queryForm', false);
+        console.warn('[Query] Chain lookup notice:', err.message || err);
     }
+
+    // 3. Not found anywhere
+    showToast(`NFT #${id} not found. Mint it first!`, 'error');
+    setFormLoading('queryForm', false);
 });
+
 
 $('copyQueryBtn')?.addEventListener('click', () => {
     const id = $('resId').textContent;
