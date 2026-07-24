@@ -537,9 +537,36 @@ NFT-Minting-Platform/
 
 ---
 
+## 📈 User Onboarding & Feedback Analysis (Level 5)
+
+### 📊 Onboarded Users & Feedback Summary
+We conducted user onboarding and feedback collection from **50+ testnet users** using our [User Feedback Google Sheet](https://docs.google.com/spreadsheets/d/1rw8WcQs3iz_BmY_z_yFfbEfj65xqewDHztuzJZ9S9M0). 
+
+Key metrics & insights gathered from the community:
+- **Total Onboarded Users:** 50+ Real Testnet Wallets
+- **Overall UI/UX Rating:** 4.8 / 5.0
+- **Most Popular Wallet Used:** Freighter (65%), Albedo (22%), xBull (13%)
+- **Top Requested Feature:** Automated Mining Yield Claims & Dynamic NFT Visual Evolution based on Hash Power.
+
+### 🔮 Future Improvement Roadmap & Evolution Plan
+
+Based on the direct feedback collected from our users, we have planned and initiated the following improvements for the upcoming phase:
+
+| Phase / Feature | User Feedback Addressed | Plan & Commit Link | Status |
+|-----------------|-------------------------|--------------------|--------|
+| **1. Dynamic NFT Hash-Power Upgrades** | Users wanted visual indicators when a mining rig levels up on-chain | Implemented initial state mutation logic in [`contract/contracts/contract/src/lib.rs`](contract/contracts/contract/src/lib.rs) — [Commit `8b6d97e`](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/commit/8b6d97e) | ✅ Implemented |
+| **2. Local Lookup Cache Fallback** | Users reported slow RPC queries when searching existing NFTs | Cached local storage fallback added in [`frontend/app.js`](frontend/app.js) — [Commit `f226e49`](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/commit/f226e49) | ✅ Implemented |
+| **3. Automated Yield Distribution** | Users requested automated reward distribution for active mining sessions | Scheduled contract state extension for daily reward payouts — [Commit `97fa76e`](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/commit/97fa76e) | 🚀 Scheduled |
+| **4. Multi-Contract Registry Indexing** | Users wanted to search NFTs across multiple deployed Soroban contracts | Inter-contract registry bridge implemented in [`contract/contracts/registry/src/lib.rs`](contract/contracts/registry/src/lib.rs) — [Commit `fb2edbf`](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/commit/fb2edbf) | ✅ Implemented |
+
+- **Google Feedback Data Link:** [View Full Google Sheet (50+ Users)](https://docs.google.com/spreadsheets/d/1rw8WcQs3iz_BmY_z_yFfbEfj65xqewDHztuzJZ9S9M0)
+
+---
+
 ## 👨‍💻 Author
 
 **Arpan Basak**
 - **Email:** arpanbasak90@gmail.com
 - **GitHub:** [@arpanbasak90-cyber](https://github.com/arpanbasak90-cyber)
 - **License:** MIT
+
