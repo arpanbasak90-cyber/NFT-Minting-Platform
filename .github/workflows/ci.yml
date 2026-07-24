@@ -115,20 +115,29 @@ jobs:
             echo "STELLAR_SECRET_KEY not set — skipping live deploy (dry-run mode)"
           fi
 
-  # ── Job 3: Frontend Deploy ────────────────────────────────────────────────────
+  # ── Job 3: Frontend Validation & CI ──────────────────────────────────────────
   frontend-check:
-    name: Validate Frontend
+    name: Validate & Lint Frontend
     runs-on: ubuntu-latest
 
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🌐 Check frontend files exist
-        run: |
-          test -f frontend/index.html && echo "✅ index.html exists" || echo "❌ index.html missing"
-          test -f frontend/app.js    && echo "✅ app.js exists"     || echo "❌ app.js missing"
-          test -f frontend/style.css && echo "✅ style.css exists"  || echo "❌ style.css missing"
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
 
-      - name: 📋 List frontend files
-        run: ls -la frontend/
+      - name: 🌐 Check frontend files & structure
+        run: |
+          test -f frontend/index.html && echo "✅ index.html exists" || exit 1
+          test -f frontend/app.js    && echo "✅ app.js exists"     || exit 1
+          test -f frontend/soroban.js && echo "✅ soroban.js exists" || exit 1
+          test -f frontend/style.css && echo "✅ style.css exists"  || exit 1
+
+      - name: 🔍 Syntax check JS files
+        run: |
+          node -c frontend/app.js
+          node -c frontend/soroban.js
+          echo "✅ JavaScript syntax validation passed!"
