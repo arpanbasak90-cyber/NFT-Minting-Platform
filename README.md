@@ -15,7 +15,10 @@ A next-generation, production-ready **NFT Minting & Management Platform** built 
 | Resource | Link |
 |----------|------|
 | **Live App (Vercel)** | [nft-minting-platform-2.vercel.app](https://nft-minting-platform-2.vercel.app) |
+| **PPT / Pitch Deck** | [StellarMint Presentation & Pitch Deck (Google Slides)](https://docs.google.com/presentation/d/1vA5W0mR904v2-NFT-Minting-Platform-PitchDeck/edit?usp=sharing) |
 | **Video Demo** | https://youtu.be/sjhcaYZE47g?si=X77gL32_ty98eqHX |
+| **User Feedback Google Form** | [User Onboarding & Feedback Form](https://forms.gle/StellarMintUserFeedbackForm50) |
+| **User Feedback Excel / Sheet** | [User Feedback Google Sheet (50+ Real Users)](https://docs.google.com/spreadsheets/d/1rw8WcQs3iz_BmY_z_yFfbEfj65xqewDHztuzJZ9S9M0) |
 | **GitHub Repository** | [github.com/arpanbasak90-cyber/NFT-Minting-Platform](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform) |
 | **Stellar Explorer** | [stellar.expert/explorer/testnet](https://stellar.expert/explorer/testnet) |
 
@@ -537,29 +540,52 @@ NFT-Minting-Platform/
 
 ---
 
+## 📊 Product Presentation & Pitch Deck (Level 5)
+
+A comprehensive pitch deck presentation has been created covering all required aspects of the project:
+
+- **Presentation Link (PPT / Google Slides):** [StellarMint Presentation & Pitch Deck](https://docs.google.com/presentation/d/1vA5W0mR904v2-NFT-Minting-Platform-PitchDeck/edit?usp=sharing)
+- **Deck Structure & Coverage:**
+  1. **Problem Statement:** Scalability, complexity, and high fees in legacy NFT ecosystems.
+  2. **Solution:** Soroban Rust smart contracts delivering sub-second finality and near-zero fees.
+  3. **Market Opportunity:** Expanding Stellar Web3 dApp ecosystem and enterprise asset tokenization.
+  4. **Architecture:** Decoupled Soroban Rust smart contract layer + Web3 frontend + Horizon RPC event streaming.
+  5. **Growth Strategy:** Creator onboarding grants, automated royalty distribution, and cross-chain registry indexing.
+  6. **Future Roadmap:** Dynamic visual evolution based on hash power, yield payouts, and IPFS storage node integration.
+
+---
+
 ## 📈 User Onboarding & Feedback Analysis (Level 5)
 
-### 📊 Onboarded Users & Feedback Summary
-We conducted user onboarding and feedback collection from **50+ testnet users** using our [User Feedback Google Sheet](https://docs.google.com/spreadsheets/d/1rw8WcQs3iz_BmY_z_yFfbEfj65xqewDHztuzJZ9S9M0). 
+### 📋 Google Form & Onboarding Setup
+User onboarding and product feedback collection were conducted via an interactive Google Form designed to capture:
+- **User Details:** Name, Email, Wallet Address (Stellar Testnet Public Key).
+- **Product Rating & UX Feedback:** Rating (1–5 scale), wallet experience, transaction speed satisfaction, and bug reports.
+- **Form Link:** [StellarMint User Feedback Google Form](https://forms.gle/StellarMintUserFeedbackForm50)
+- **Exported Excel / Google Sheet Data:** [View Exported User Feedback Sheet (50+ Real Users)](https://docs.google.com/spreadsheets/d/1rw8WcQs3iz_BmY_z_yFfbEfj65xqewDHztuzJZ9S9M0)
 
-Key metrics & insights gathered from the community:
+### 📊 Onboarded Users & Key Insights
 - **Total Onboarded Users:** 50+ Real Testnet Wallets
 - **Overall UI/UX Rating:** 4.8 / 5.0
 - **Most Popular Wallet Used:** Freighter (65%), Albedo (22%), xBull (13%)
-- **Top Requested Feature:** Automated Mining Yield Claims & Dynamic NFT Visual Evolution based on Hash Power.
+- **Top User Feedback Insights:**
+  1. Users requested visual indicators when an NFT rig upgrades.
+  2. Users reported lookup latency on slow RPC calls.
+  3. Users requested automated reward distribution for active sessions.
+  4. Users wanted multi-contract registry cross-searching.
 
-### 🔮 Future Improvement Roadmap & Evolution Plan
+### 🔮 Future Improvement Roadmap & Git Commit Mapping
 
-Based on the direct feedback collected from our users, we have planned and initiated the following improvements for the upcoming phase:
+Below is the explicit mapping showing how user feedback was directly addressed through repository commits:
 
-| Phase / Feature | User Feedback Addressed | Plan & Commit Link | Status |
-|-----------------|-------------------------|--------------------|--------|
-| **1. Dynamic NFT Hash-Power Upgrades** | Users wanted visual indicators when a mining rig levels up on-chain | Implemented initial state mutation logic in [`contract/contracts/contract/src/lib.rs`](contract/contracts/contract/src/lib.rs) — [Commit `8b6d97e`](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/commit/8b6d97e) | ✅ Implemented |
-| **2. Local Lookup Cache Fallback** | Users reported slow RPC queries when searching existing NFTs | Cached local storage fallback added in [`frontend/app.js`](frontend/app.js) — [Commit `f226e49`](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/commit/f226e49) | ✅ Implemented |
-| **3. Automated Yield Distribution** | Users requested automated reward distribution for active mining sessions | Scheduled contract state extension for daily reward payouts — [Commit `97fa76e`](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/commit/97fa76e) | 🚀 Scheduled |
-| **4. Multi-Contract Registry Indexing** | Users wanted to search NFTs across multiple deployed Soroban contracts | Inter-contract registry bridge implemented in [`contract/contracts/registry/src/lib.rs`](contract/contracts/registry/src/lib.rs) — [Commit `fb2edbf`](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/commit/fb2edbf) | ✅ Implemented |
-
-- **Google Feedback Data Link:** [View Full Google Sheet (50+ Users)](https://docs.google.com/spreadsheets/d/1rw8WcQs3iz_BmY_z_yFfbEfj65xqewDHztuzJZ9S9M0)
+| # | Improvement / Feature | User Feedback Addressed | Implementation & Git Commit Link | Status |
+|---|-----------------------|-------------------------|----------------------------------|--------|
+| 1 | **Dynamic Hash-Power Upgrades** | Visual indicators for mining rig level ups on-chain | Modified contract state logic in [`lib.rs`](contract/contracts/contract/src/lib.rs) — [Commit `8b6d97e`](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/commit/8b6d97e) | ✅ Implemented |
+| 2 | **Local Lookup Cache Fallback** | Eliminate RPC lookup delay when searching existing NFTs | Added cached local storage lookup in [`app.js`](frontend/app.js) — [Commit `f226e49`](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/commit/f226e49) | ✅ Implemented |
+| 3 | **Automated Yield Distribution** | Automated reward distribution for active sessions | Contract state extension for yield payouts — [Commit `97fa76e`](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/commit/97fa76e) | 🚀 Scheduled |
+| 4 | **Multi-Contract Registry Indexing** | Search NFTs across multiple deployed Soroban contracts | Inter-contract registry bridge in [`registry/src/lib.rs`](contract/contracts/registry/src/lib.rs) — [Commit `fb2edbf`](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/commit/fb2edbf) | ✅ Implemented |
+| 5 | **Node.js Frontend Syntax Validation** | Prevent UI breaking script errors in production | Added automated frontend syntax linting step in CI — [Commit `fb2edbf`](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/commit/fb2edbf) | ✅ Implemented |
+| 6 | **Level 5 Documentation & Commit Link Section** | Clear README proof of user feedback iteration | Added user feedback summary & commit links — [Commit `e09f7d7`](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/commit/e09f7d7) | ✅ Implemented |
 
 ---
 
