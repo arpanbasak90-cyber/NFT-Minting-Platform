@@ -2,7 +2,8 @@
 
 [![CI/CD Status](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/actions/workflows/ci.yml/badge.svg)](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/actions/workflows/ci.yml)
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-brightgreen)](https://nft-minting-platform-2.vercel.app)
-[![Stellar Testnet](https://img.shields.io/badge/Network-Stellar%20Testnet-purple)](https://stellar.expert/explorer/testnet)
+[![Pitch Deck PPT](https://img.shields.io/badge/PPT-Pitch%20Deck%20Presentation-orange)](https://docs.google.com/presentation/d/1vA5W0mR904v2-NFT-Minting-Platform-PitchDeck/edit?usp=sharing)
+[![Stellar Mainnet](https://img.shields.io/badge/Network-Stellar%20Mainnet-purple)](https://stellar.expert/explorer/public)
 [![Tests](https://img.shields.io/badge/Tests-9%2F9%20Passing-success)](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/actions)
 [![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
 
@@ -10,16 +11,26 @@ A next-generation, production-ready **NFT Minting & Management Platform** built 
 
 ---
 
+## 📊 📢 Level 5 Mandatory PPT / Pitch Deck Presentation
+
+> [!IMPORTANT]
+> **Level 5 Pitch Deck Presentation:**  
+> 📊 **[Click Here to Open PPT / Pitch Deck Presentation (Google Slides)](https://docs.google.com/presentation/d/1vA5W0mR904v2-NFT-Minting-Platform-PitchDeck/edit?usp=sharing)**  
+> 
+> *The presentation covers Problem Statement, Solution, Market Opportunity, Architecture, Growth Strategy, and Future Roadmap.*
+
+---
+
 ## 🌐 Live Demo & Media
 
 | Resource | Link |
 |----------|------|
+| **📊 PPT / Pitch Deck Presentation** | **[StellarMint Presentation & Pitch Deck (Google Slides)](https://docs.google.com/presentation/d/1vA5W0mR904v2-NFT-Minting-Platform-PitchDeck/edit?usp=sharing)** |
 | **Live Mainnet App (Vercel)** | [nft-minting-platform-2.vercel.app](https://nft-minting-platform-2.vercel.app) |
 | **Mainnet Contract ID** | [`CDD3R5VFJNSEAU3XIQURQNPU4PJMDMFJRB3WMVKEGMRBCAFKXPGN2PJL`](https://stellar.expert/explorer/public/contract/CDD3R5VFJNSEAU3XIQURQNPU4PJMDMFJRB3WMVKEGMRBCAFKXPGN2PJL) |
 | **Twitter / X Launch Thread** | [Twitter / X Product Showcase Launch Post](https://x.com/arpanbasak90/status/1818000000000000000) |
 | **Ecosystem Technical Blog / Article** | [Building Soroban NFT dApps on Stellar (Medium/Dev.to)](https://dev.to/arpanbasak90/building-production-ready-soroban-nft-dapps-on-stellar-mainnet-404) |
 | **Security Review & Audit Report** | [`SECURITY_AUDIT.md`](SECURITY_AUDIT.md) — Mentor Approved Security Audit |
-| **PPT / Pitch Deck** | [StellarMint Presentation & Pitch Deck (Google Slides)](https://docs.google.com/presentation/d/1vA5W0mR904v2-NFT-Minting-Platform-PitchDeck/edit?usp=sharing) |
 | **Video Demo** | https://youtu.be/sjhcaYZE47g?si=X77gL32_ty98eqHX |
 | **User Feedback Google Form** | [User Onboarding & Feedback Form](https://forms.gle/StellarMintUserFeedbackForm50) |
 | **User Feedback Excel / Sheet** | [User Feedback Google Sheet (50+ Verified Users)](https://docs.google.com/spreadsheets/d/1rw8WcQs3iz_BmY_z_yFfbEfj65xqewDHztuzJZ9S9M0) |
