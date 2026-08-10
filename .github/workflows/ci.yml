@@ -24,10 +24,9 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
 
-      - name: 📦 Cache Cargo Dependencies
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: "contract"
+      - name: 🧹 Clean build directory
+        working-directory: ./contract
+        run: cargo clean
 
       - name: 🔨 Build WASM Contracts
         working-directory: ./contract
