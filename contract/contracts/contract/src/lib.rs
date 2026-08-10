@@ -2,7 +2,7 @@
 
 use soroban_sdk::{
     contract, contracterror, contractimpl, contracttype,
-    Address, Env, Symbol, BytesN, String,
+    Address, Env, Symbol, BytesN, String, Vec,
 };
 
 // ─── Error Types ────────────────────────────────────────────────────────────
@@ -16,6 +16,7 @@ pub enum NFTError {
     NotOwner        = 3,
     NoStorage       = 4,
     Unauthorized    = 5,
+    EmptyBatch      = 6,
 }
 
 // ─── Data Types ──────────────────────────────────────────────────────────────
@@ -24,6 +25,14 @@ pub enum NFTError {
 #[derive(Clone)]
 pub struct NFT {
     pub owner:    Address,
+    pub token_id: u64,
+    pub metadata: BytesN<32>,
+    pub name:     String,
+}
+
+#[contracttype]
+#[derive(Clone)]
+pub struct BatchMintItem {
     pub token_id: u64,
     pub metadata: BytesN<32>,
     pub name:     String,
@@ -81,6 +90,47 @@ impl NFTContract {
         Ok(())
     }
 
+    // ── Batch Mint ───────────────────────────────────────────────────────────
+    pub fn batch_mint(
+        env: Env,
+        to: Address,
+        items: Vec<BatchMintItem>,
+    ) -> Result<(), NFTError> {
+        to.require_auth();
+
+        if items.is_empty() {
+            return Err(NFTError::EmptyBatch);
+        }
+
+        let mut supply: u64 = env.storage().instance()
+            .get(&DataKey::TotalSupply)
+            .unwrap_or(0u64);
+
+        for item in items.iter() {
+            if env.storage().persistent().has(&DataKey::NFT(item.token_id)) {
+                return Err(NFTError::AlreadyExists);
+            }
+
+            let nft = NFT {
+                owner: to.clone(),
+                token_id: item.token_id,
+                metadata: item.metadata.clone(),
+                name: item.name.clone(),
+            };
+
+            env.storage().persistent().set(&DataKey::NFT(item.token_id), &nft);
+            supply += 1;
+
+            env.events().publish(
+                (Symbol::new(&env, "batch_mint"), to.clone()),
+                (item.token_id, item.name),
+            );
+        }
+
+        env.storage().instance().set(&DataKey::TotalSupply, &supply);
+        Ok(())
+    }
+
     // ── Transfer ─────────────────────────────────────────────────────────────
     pub fn transfer(
         env: Env,
@@ -106,6 +156,40 @@ impl NFTContract {
             (Symbol::new(&env, "transfer"), from.clone()),
             (to, token_id),
         );
+
+        Ok(())
+    }
+
+    // ── Batch Transfer ───────────────────────────────────────────────────────
+    pub fn batch_transfer(
+        env: Env,
+        from: Address,
+        to: Address,
+        token_ids: Vec<u64>,
+    ) -> Result<(), NFTError> {
+        from.require_auth();
+
+        if token_ids.is_empty() {
+            return Err(NFTError::EmptyBatch);
+        }
+
+        for token_id in token_ids.iter() {
+            let mut nft: NFT = env.storage().persistent()
+                .get(&DataKey::NFT(token_id))
+                .ok_or(NFTError::NotFound)?;
+
+            if nft.owner != from {
+                return Err(NFTError::NotOwner);
+            }
+
+            nft.owner = to.clone();
+            env.storage().persistent().set(&DataKey::NFT(token_id), &nft);
+
+            env.events().publish(
+                (Symbol::new(&env, "batch_transfer"), from.clone()),
+                (to.clone(), token_id),
+            );
+        }
 
         Ok(())
     }

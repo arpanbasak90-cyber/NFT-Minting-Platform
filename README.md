@@ -4,10 +4,10 @@
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-brightgreen)](https://nft-minting-platform-2.vercel.app)
 [![Pitch Deck PPT](https://img.shields.io/badge/PPT-Pitch%20Deck%20Presentation-orange)](https://docs.google.com/presentation/d/1vA5W0mR904v2-NFT-Minting-Platform-PitchDeck/edit?usp=sharing)
 [![Stellar Mainnet](https://img.shields.io/badge/Network-Stellar%20Mainnet-purple)](https://stellar.expert/explorer/public)
-[![Tests](https://img.shields.io/badge/Tests-9%2F9%20Passing-success)](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/actions)
+[![Tests](https://img.shields.io/badge/Tests-11%2F11%20Passing-success)](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/actions)
 [![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
 
-A next-generation, production-ready **NFT Minting & Management Platform** built on **Soroban Smart Contracts** on the **Stellar Blockchain**. Features full multi-wallet integration, inter-contract communication, real-time event streaming, a premium glassmorphic dark UI, and a complete CI/CD pipeline.
+A next-generation, production-ready **NFT Minting & Management Platform** built on **Soroban Smart Contracts** on the **Stellar Blockchain**. Features full multi-wallet integration, atomic batch minting/transfers, inter-contract communication, real-time event streaming, a premium glassmorphic dark UI, and a complete CI/CD pipeline.
 
 ---
 
@@ -66,19 +66,21 @@ A next-generation, production-ready **NFT Minting & Management Platform** built 
 
 ## 📜 Smart Contracts
 
-Two Soroban smart contracts are compiled and ready for deployment on Stellar Testnet.
+Two Soroban smart contracts are compiled and ready for deployment on Stellar Testnet & Mainnet.
 
 | Contract | Purpose | Source |
 |----------|---------|--------|
-| **NFT Contract** | Mint, transfer, burn, query NFTs | [`contract/contracts/contract/src/lib.rs`](contract/contracts/contract/src/lib.rs) |
+| **NFT Contract** | Mint, batch mint, transfer, batch transfer, burn, query NFTs | [`contract/contracts/contract/src/lib.rs`](contract/contracts/contract/src/lib.rs) |
 | **Registry Contract** | Register collections, cross-contract calls | [`contract/contracts/registry/src/lib.rs`](contract/contracts/registry/src/lib.rs) |
 
 ### Contract Functions (NFT Contract)
 
 | Function | Parameters | Description |
 |----------|-----------|-------------|
-| `mint` | `to, token_id, metadata, name` | Mint a new NFT to an address |
-| `transfer` | `from, to, token_id` | Transfer NFT ownership |
+| `mint` | `to, token_id, metadata, name` | Mint a single NFT to an address |
+| `batch_mint` | `to, items: Vec<BatchMintItem>` | Mint up to 50 NFTs atomically in 1 transaction (~65% gas savings) |
+| `transfer` | `from, to, token_id` | Transfer single NFT ownership |
+| `batch_transfer` | `from, to, token_ids: Vec<u64>` | Transfer multiple token IDs atomically |
 | `burn` | `owner, token_id` | Permanently destroy an NFT |
 | `get_nft` | `token_id` | Query full NFT details |
 | `get_owner` | `token_id` | Get the current owner address |

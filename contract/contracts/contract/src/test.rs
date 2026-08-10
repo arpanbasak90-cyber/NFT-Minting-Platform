@@ -115,3 +115,67 @@ fn test_transfer_not_owner_fails() {
     let result = client.try_transfer(&attacker, &owner, &7u64);
     assert!(result.is_err());
 }
+
+// ── Test 8: Batch mint multiple NFTs atomically ──────────────────────────────
+#[test]
+fn test_batch_mint() {
+    let (env, client) = setup();
+    let owner = Address::generate(&env);
+    let meta = BytesN::from_array(&env, &[8u8; 32]);
+
+    let mut items = Vec::new(&env);
+    items.push_back(BatchMintItem {
+        token_id: 100u64,
+        metadata: meta.clone(),
+        name: String::from_str(&env, "Batch #1"),
+    });
+    items.push_back(BatchMintItem {
+        token_id: 101u64,
+        metadata: meta.clone(),
+        name: String::from_str(&env, "Batch #2"),
+    });
+    items.push_back(BatchMintItem {
+        token_id: 102u64,
+        metadata: meta.clone(),
+        name: String::from_str(&env, "Batch #3"),
+    });
+
+    client.batch_mint(&owner, &items);
+
+    assert_eq!(client.total_supply(), 3u64);
+    assert_eq!(client.get_owner(&100u64), owner);
+    assert_eq!(client.get_owner(&101u64), owner);
+    assert_eq!(client.get_owner(&102u64), owner);
+}
+
+// ── Test 9: Batch transfer multiple NFTs ─────────────────────────────────────
+#[test]
+fn test_batch_transfer() {
+    let (env, client) = setup();
+    let owner = Address::generate(&env);
+    let recipient = Address::generate(&env);
+    let meta = BytesN::from_array(&env, &[9u8; 32]);
+
+    let mut items = Vec::new(&env);
+    items.push_back(BatchMintItem {
+        token_id: 200u64,
+        metadata: meta.clone(),
+        name: String::from_str(&env, "Transfer #1"),
+    });
+    items.push_back(BatchMintItem {
+        token_id: 201u64,
+        metadata: meta.clone(),
+        name: String::from_str(&env, "Transfer #2"),
+    });
+
+    client.batch_mint(&owner, &items);
+
+    let mut transfer_ids = Vec::new(&env);
+    transfer_ids.push_back(200u64);
+    transfer_ids.push_back(201u64);
+
+    client.batch_transfer(&owner, &recipient, &transfer_ids);
+
+    assert_eq!(client.get_owner(&200u64), recipient);
+    assert_eq!(client.get_owner(&201u64), recipient);
+}

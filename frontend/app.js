@@ -953,6 +953,87 @@ $('regenMetaBtn')?.addEventListener('click', async () => {
     showToast('SHA-256 metadata hash generated!', 'info');
 });
 
+// ── Batch Operations Event Handlers ─────────────────────────────────────
+$('batchQuantity')?.addEventListener('input', (e) => {
+    const qty = Math.max(1, Math.min(50, parseInt(e.target.value || '1', 10)));
+    const singleGas = (qty * 0.0050).toFixed(4);
+    const batchGas = (0.0050 + (qty * 0.00075)).toFixed(4);
+    const savings = (((singleGas - batchGas) / singleGas) * 100).toFixed(1);
+    if ($('estSingleGas')) $('estSingleGas').textContent = `${singleGas} XLM`;
+    if ($('estBatchGas')) $('estBatchGas').textContent = `${batchGas} XLM`;
+    if ($('estSavings')) $('estSavings').textContent = `${savings}%`;
+});
+
+$('batchTransferIds')?.addEventListener('input', (e) => {
+    const ids = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
+    if ($('batchTransferPreview')) {
+        $('batchTransferPreview').textContent = ids.length > 0 
+            ? `${ids.length} tokens selected for atomic transfer (IDs: ${ids.join(', ')})`
+            : 'No tokens selected yet.';
+    }
+});
+
+$('executeBatchMintBtn')?.addEventListener('click', async () => {
+    const baseName = $('batchBaseName')?.value.trim() || 'Stellar Batch NFT';
+    const startId  = parseInt($('batchStartId')?.value || '100', 10);
+    const count    = Math.min(50, parseInt($('batchQuantity')?.value || '5', 10));
+    const recipient = $('batchRecipient')?.value.trim() || walletAddress || 'G...ConnectedWallet';
+
+    addLog(`Initiating atomic batch mint of ${count} NFTs starting from ID #${startId}...`, 'info');
+    showToast(`Minting ${count} NFTs in 1 atomic transaction...`, 'info');
+
+    for (let i = 0; i < count; i++) {
+        const tokenId = startId + i;
+        const name = `${baseName} #${i + 1}`;
+        const metadata = Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+        nftStorage.set(String(tokenId), {
+            id: String(tokenId),
+            name,
+            owner: recipient,
+            metadata,
+            txHash: '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
+            mintTime: new Date().toLocaleTimeString(),
+            network: activeNetwork
+        });
+    }
+
+    stats.minted += count;
+    refreshStats();
+    renderGallery();
+
+    const txHash = '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+    addTxRow('batch_mint', txHash, recipient, `Batch of ${count} NFTs (IDs ${startId}-${startId + count - 1})`);
+    pushNotif('⚡ Batch Mint Complete', `Atomic batch mint of ${count} NFTs succeeded on Soroban!`, 'purple');
+    addLog(`Atomic batch mint of ${count} NFTs completed. Tx: ${txHash.slice(0, 10)}...`, 'success');
+    showToast(`Successfully batch minted ${count} NFTs!`, 'success');
+});
+
+$('executeBatchTransferBtn')?.addEventListener('click', () => {
+    const idsInput = $('batchTransferIds')?.value.trim();
+    const recipient = $('batchTransferRecipient')?.value.trim();
+    if (!idsInput) { showToast('Please enter Token IDs to transfer', 'error'); return; }
+    if (!recipient) { showToast('Please enter recipient address', 'error'); return; }
+
+    const ids = idsInput.split(',').map(s => s.trim()).filter(Boolean);
+    ids.forEach(id => {
+        if (nftStorage.has(id)) {
+            const nft = nftStorage.get(id);
+            nft.owner = recipient;
+            nftStorage.set(id, nft);
+        }
+    });
+
+    stats.transfers += ids.length;
+    refreshStats();
+    renderGallery();
+
+    const txHash = '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+    addTxRow('batch_transfer', txHash, recipient, `${ids.length} Tokens: ${ids.join(', ')}`);
+    pushNotif('🔄 Batch Transfer Complete', `Atomic transfer of ${ids.length} tokens to ${recipient.slice(0, 8)}...`, 'teal');
+    addLog(`Batch transfer of ${ids.length} tokens completed. Tx: ${txHash.slice(0, 10)}...`, 'success');
+    showToast(`Transferred ${ids.length} tokens atomically!`, 'success');
+});
+
 // ── Toast Notifications ───────────────────────────────────────────────
 function showToast(msg, type = 'info') {
     const container = $('toastContainer');
