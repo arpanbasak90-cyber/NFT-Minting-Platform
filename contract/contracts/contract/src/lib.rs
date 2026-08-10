@@ -250,4 +250,5 @@ impl NFTContract {
     }
 }
 
+#[cfg(test)]
 mod test;

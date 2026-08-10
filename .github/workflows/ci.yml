@@ -27,7 +27,7 @@ jobs:
       - name: 📦 Cache Cargo Dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: "./contract -> target"
+          workspaces: "contract"
 
       - name: 🔨 Build WASM Contracts
         working-directory: ./contract

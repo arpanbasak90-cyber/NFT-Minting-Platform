@@ -143,4 +143,5 @@ impl NFTRegistry {
     }
 }
 
+#[cfg(test)]
 mod test;
