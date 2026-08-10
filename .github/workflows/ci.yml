@@ -8,6 +8,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
 
 jobs:
   # ── Job 1: Build & Test Smart Contracts ──────────────────────────────────────
@@ -24,17 +25,13 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
 
-      - name: 🧹 Clean build directory
+      - name: 🔨 Step 1 - Build WASM Contract
         working-directory: ./contract
-        run: cargo clean || true
+        run: cargo build --target wasm32-unknown-unknown --release
 
-      - name: 🔨 Build WASM Contracts
+      - name: ✅ Step 2 - Run Smart Contract Tests
         working-directory: ./contract
-        run: cargo build --target wasm32-unknown-unknown --release --verbose
-
-      - name: ✅ Run All Tests (11/11)
-        working-directory: ./contract
-        run: cargo test --workspace --verbose
+        run: cargo test --workspace -- --nocapture
 
       - name: 📤 Upload WASM Artifact
         uses: actions/upload-artifact@v4
