@@ -6,6 +6,7 @@
 //! 3. Emits registry events for real-time indexing
 
 #![no_std]
+#![allow(deprecated)]
 
 use soroban_sdk::{
     contract, contracterror, contractimpl, contracttype,
@@ -46,6 +47,7 @@ pub enum DataKey {
 mod nft_contract {
     use soroban_sdk::{contractclient, Address, Env};
 
+    #[allow(dead_code)]
     #[contractclient(name = "NFTContractClient")]
     pub trait NFTContractTrait {
         fn total_supply(env: Env) -> u64;
