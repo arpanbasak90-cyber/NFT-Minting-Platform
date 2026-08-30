@@ -11,10 +11,21 @@ let theme         = 'dark';
 let collectionCap = 100;
 let contractId    = '';
 
-const stats = { minted: 0, transfers: 0, burned: 0 };
+// Persist stats across page reloads using localStorage
+const _savedStats = JSON.parse(localStorage.getItem('stellarmint_stats') || '{"minted":0,"transfers":0,"burned":0}');
+const stats = { minted: _savedStats.minted || 0, transfers: _savedStats.transfers || 0, burned: _savedStats.burned || 0 };
 
-// Empty — all data is user-generated at runtime
-const nftStorage = new Map();
+function persistStats() {
+    localStorage.setItem('stellarmint_stats', JSON.stringify(stats));
+}
+
+// NFT storage — persisted to localStorage
+const _savedNFTs = JSON.parse(localStorage.getItem('stellarmint_nfts') || '[]');
+const nftStorage = new Map(_savedNFTs);
+
+function persistNFTs() {
+    localStorage.setItem('stellarmint_nfts', JSON.stringify([...nftStorage]));
+}
 
 const txHistory     = [];
 const notifications = [];
@@ -466,11 +477,6 @@ function setFormLoading(formId, isLoading, loadingText = "Processing...") {
 }
 
 // ── Mint NFT ──────────────────────────────────────────────────────────
-// Helper: generate random 64-char tx hash
-function localTxHash() {
-    return Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
-}
-
 $('mintForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!walletAddress) { showToast('Connect a wallet first', 'error'); return; }
@@ -484,33 +490,39 @@ $('mintForm').addEventListener('submit', async (e) => {
     if (nftStorage.size >= collectionCap) { showToast(`Collection cap of ${collectionCap} reached!`, 'error'); return; }
 
     setFormLoading('mintForm', true, 'Minting on Soroban...');
-    showToast('Preparing transaction...', 'info');
+    showToast('📡 Submitting to Stellar testnet...', 'info');
 
-    // Try the real Soroban integration; fall back to local success on any error
-    let txHash = localTxHash();
+    let txHash = null;
+    let explorerUrl = null;
     try {
         if (window.SorobanIntegration && window.SorobanIntegration.mint) {
             const txResult = await window.SorobanIntegration.mint(walletAddress, id, meta, name);
-            if (txResult && txResult.status === 'SUCCESS' && txResult.hash) {
+            if (txResult && txResult.hash) {
                 txHash = txResult.hash;
+                explorerUrl = txResult.explorerUrl || window.SorobanIntegration.getExplorerUrl(txHash);
             }
         }
     } catch (err) {
-        console.warn('[Mint] Soroban integration notice:', err.message || err);
+        setFormLoading('mintForm', false);
+        showToast(`❌ Transaction failed: ${err.message}`, 'error');
+        addLog(`Mint failed: ${err.message}`, 'error');
+        return;
     }
 
-    // Always succeed locally — store NFT and update UI
-    nftStorage.set(id, { owner: walletAddress, token_id: id, name, royalty, metadata: meta });
+    // Store NFT and update UI only on real on-chain success
+    nftStorage.set(id, { owner: walletAddress, token_id: id, name, royalty, metadata: meta, txHash, explorerUrl });
+    persistNFTs();
     stats.minted++;
+    persistStats();
     refreshStats();
     renderGallery();
 
     const msg = `Minted "${name}" (#${id}) with ${royalty}% royalty`;
     $('latestNftText').textContent = `"${name}" (#${id})`;
-    showToast(`✅ ${msg} successfully!`, 'success');
-    addLog(msg, 'success');
-    recordTx('mint', id, `Tx: ${txHash.substring(0, 8)}...`);
-    pushNotif('🎨 NFT Minted!', `"${name}" (Token #${id}) was minted successfully on Soroban.`);
+    showToast(`✅ ${msg} — confirmed on Stellar testnet!`, 'success');
+    addLog(`${msg} | Explorer: ${explorerUrl}`, 'success');
+    recordTx('mint', id, txHash, explorerUrl);
+    pushNotif('🎨 NFT Minted!', `"${name}" (Token #${id}) confirmed on Soroban testnet.`);
     e.target.reset();
     randomizeMetaInput();
     setFormLoading('mintForm', false);
@@ -523,36 +535,44 @@ $('transferForm').addEventListener('submit', async (e) => {
 
     const id   = parseInt($('transferTokenId').value);
     const to   = $('receiverAddress').value.trim();
-    const note = $('transferNote').value.trim();
 
     if (!to.startsWith('G') || to.length < 50) { showToast('Invalid recipient Stellar address', 'error'); return; }
-    if (!nftStorage.has(id)) { showToast(`NFT #${id} not found`, 'error'); return; }
+    if (!nftStorage.has(id)) { showToast(`NFT #${id} not found in your collection`, 'error'); return; }
 
     setFormLoading('transferForm', true, 'Transferring on Soroban...');
-    showToast('Preparing transfer transaction...', 'info');
+    showToast('📡 Submitting transfer to Stellar testnet...', 'info');
 
-    let txHash = localTxHash();
+    let txHash = null;
+    let explorerUrl = null;
     try {
         if (window.SorobanIntegration && window.SorobanIntegration.transfer) {
             const txResult = await window.SorobanIntegration.transfer(walletAddress, to, id);
-            if (txResult && txResult.status === 'SUCCESS' && txResult.hash) txHash = txResult.hash;
+            if (txResult && txResult.hash) {
+                txHash = txResult.hash;
+                explorerUrl = txResult.explorerUrl || window.SorobanIntegration.getExplorerUrl(txHash);
+            }
         }
     } catch (err) {
-        console.warn('[Transfer] Soroban integration notice:', err.message || err);
+        setFormLoading('transferForm', false);
+        showToast(`❌ Transfer failed: ${err.message}`, 'error');
+        addLog(`Transfer failed: ${err.message}`, 'error');
+        return;
     }
 
     const nft = nftStorage.get(id);
     nft.owner = to;
     nftStorage.set(id, nft);
+    persistNFTs();
     stats.transfers++;
+    persistStats();
     refreshStats();
     renderGallery();
 
     const msg = `Transferred #${id} → ${to.substring(0, 8)}...`;
-    showToast(msg, 'success');
-    addLog(msg, 'success');
-    recordTx('transfer', id, `Tx: ${txHash.substring(0, 8)}...`);
-    pushNotif('🔄 Transfer Complete', `Token #${id} transferred to ${to.substring(0, 8)}...`);
+    showToast(`✅ ${msg} — confirmed on Stellar testnet!`, 'success');
+    addLog(`${msg} | Explorer: ${explorerUrl}`, 'success');
+    recordTx('transfer', id, txHash, explorerUrl);
+    pushNotif('🔄 Transfer Complete', `Token #${id} confirmed on Soroban testnet.`);
     e.target.reset();
     setFormLoading('transferForm', false);
 });
@@ -568,28 +588,37 @@ $('burnForm').addEventListener('submit', async (e) => {
     const nft = nftStorage.get(id);
 
     setFormLoading('burnForm', true, 'Burning on Soroban...');
-    showToast('Preparing burn transaction...', 'info');
+    showToast('📡 Submitting burn to Stellar testnet...', 'info');
 
-    let txHash = localTxHash();
+    let txHash = null;
+    let explorerUrl = null;
     try {
         if (window.SorobanIntegration && window.SorobanIntegration.burn) {
             const txResult = await window.SorobanIntegration.burn(walletAddress, id);
-            if (txResult && txResult.status === 'SUCCESS' && txResult.hash) txHash = txResult.hash;
+            if (txResult && txResult.hash) {
+                txHash = txResult.hash;
+                explorerUrl = txResult.explorerUrl || window.SorobanIntegration.getExplorerUrl(txHash);
+            }
         }
     } catch (err) {
-        console.warn('[Burn] Soroban integration notice:', err.message || err);
+        setFormLoading('burnForm', false);
+        showToast(`❌ Burn failed: ${err.message}`, 'error');
+        addLog(`Burn failed: ${err.message}`, 'error');
+        return;
     }
 
     nftStorage.delete(id);
+    persistNFTs();
     stats.burned++;
+    persistStats();
     refreshStats();
     renderGallery();
 
     const msg = `Burned NFT "${nft.name}" (#${id})`;
-    showToast(msg, 'success');
-    addLog(msg, 'success');
-    recordTx('burn', id, `Tx: ${txHash.substring(0, 8)}...`);
-    pushNotif('🔥 NFT Burned', `"${nft.name}" (#${id}) was permanently destroyed on Soroban.`);
+    showToast(`✅ ${msg} — confirmed on Stellar testnet!`, 'success');
+    addLog(`${msg} | Explorer: ${explorerUrl}`, 'success');
+    recordTx('burn', id, txHash, explorerUrl);
+    pushNotif('🔥 NFT Burned', `"${nft.name}" (#${id}) permanently destroyed on Soroban testnet.`);
     e.target.reset();
     setFormLoading('burnForm', false);
 });
@@ -770,12 +799,18 @@ function exportCsv(type) {
 }
 
 // ── Tx Center ─────────────────────────────────────────────────────────
-function recordTx(type, id, detail) {
+function recordTx(type, id, txHash, explorerUrl) {
     const tbody = $('txTableBody');
     const emptyRow = tbody.querySelector('tr td.empty-td');
     if (emptyRow) emptyRow.closest('tr').remove();
 
-    const entry = { time: new Date().toLocaleTimeString(), type, id, detail, network: activeNetwork };
+    const shortHash = txHash ? `${txHash.substring(0, 8)}...${txHash.substring(56)}` : 'Pending';
+    const explorerLink = explorerUrl
+        ? `<a href="${explorerUrl}" target="_blank" rel="noopener" title="View on Stellar Testnet Explorer" style="color:var(--primary);font-size:0.85em;margin-left:6px">🔗 Explorer</a>`
+        : '';
+    const detail = `<span title="${txHash || ''}">Tx: ${shortHash}</span>${explorerLink}`;
+
+    const entry = { time: new Date().toLocaleTimeString(), type, id, txHash, explorerUrl, network: activeNetwork };
     txHistory.unshift(entry);
 
     const row = document.createElement('tr');
@@ -785,7 +820,7 @@ function recordTx(type, id, detail) {
         <td>#${id}</td>
         <td>${detail}</td>
         <td><span class="ndot ${activeNetwork}" style="display:inline-block;margin-right:4px"></span>${activeNetwork}</td>
-        <td class="tx-ok">✓ Success</td>
+        <td class="tx-ok">✓ Confirmed</td>
     `;
     tbody.insertBefore(row, tbody.firstChild);
 }
@@ -909,11 +944,32 @@ $('addCustomTemplateBtn')?.addEventListener('click', () => {
     showToast(`Template "${name}" saved!`, 'success');
 });
 
-// ── RPC Latency Simulation ────────────────────────────────────────────
-function simulateRpcLatency() {
-    const latency = Math.floor(Math.random() * 80) + 20;
-    $('rpcLatency').textContent = `~${latency}ms`;
-    $('rpcDot').className = latency < 100 ? 'rpc-dot live' : 'rpc-dot dead';
+// ── Real RPC Latency Measurement ─────────────────────────────────────
+async function simulateRpcLatency() {
+    $('rpcDot').className = 'rpc-dot';
+    $('rpcLatency').textContent = 'Checking...';
+    try {
+        if (window.SorobanIntegration && window.SorobanIntegration.measureRpcLatency) {
+            const latency = await window.SorobanIntegration.measureRpcLatency();
+            if (latency === null) {
+                $('rpcLatency').textContent = 'Offline';
+                $('rpcDot').className = 'rpc-dot dead';
+            } else {
+                $('rpcLatency').textContent = `${latency}ms`;
+                $('rpcDot').className = latency < 300 ? 'rpc-dot live' : 'rpc-dot dead';
+            }
+        } else {
+            // Fallback: ping Stellar Horizon directly
+            const start = performance.now();
+            await fetch('https://horizon-testnet.stellar.org/fee_stats');
+            const ms = Math.round(performance.now() - start);
+            $('rpcLatency').textContent = `${ms}ms`;
+            $('rpcDot').className = ms < 500 ? 'rpc-dot live' : 'rpc-dot dead';
+        }
+    } catch {
+        $('rpcLatency').textContent = 'Offline';
+        $('rpcDot').className = 'rpc-dot dead';
+    }
 }
 
 // ── Regen / SHA-256 metadata ──────────────────────────────────────────

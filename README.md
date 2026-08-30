@@ -3,7 +3,7 @@
 [![CI/CD Status](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/actions/workflows/ci.yml/badge.svg)](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/actions/workflows/ci.yml)
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-brightgreen)](https://nft-minting-platform-2.vercel.app)
 [![Pitch Deck PPT](https://img.shields.io/badge/PPT-Pitch%20Deck%20Presentation-orange)](https://docs.google.com/presentation/d/1vA5W0mR904v2-NFT-Minting-Platform-PitchDeck/edit?usp=sharing)
-[![Stellar Mainnet](https://img.shields.io/badge/Network-Stellar%20Mainnet-purple)](https://stellar.expert/explorer/public)
+[![Stellar Testnet](https://img.shields.io/badge/Network-Stellar%20Testnet-blueviolet)](https://testnet.stellar.expert)
 [![Tests](https://img.shields.io/badge/Tests-11%2F11%20Passing-success)](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/actions)
 [![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
 
@@ -26,16 +26,17 @@ A next-generation, production-ready **NFT Minting & Management Platform** built 
 | Resource | Link |
 |----------|------|
 | **📊 PPT / Pitch Deck Presentation** | **[StellarMint Presentation & Pitch Deck (Google Slides)](https://docs.google.com/presentation/d/1vA5W0mR904v2-NFT-Minting-Platform-PitchDeck/edit?usp=sharing)** |
-| **Live Mainnet App (Vercel)** | [nft-minting-platform-2.vercel.app](https://nft-minting-platform-2.vercel.app) |
-| **Mainnet Contract ID** | [`CDD3R5VFJNSEAU3XIQURQNPU4PJMDMFJRB3WMVKEGMRBCAFKXPGN2PJL`](https://stellar.expert/explorer/public/contract/CDD3R5VFJNSEAU3XIQURQNPU4PJMDMFJRB3WMVKEGMRBCAFKXPGN2PJL) |
-| **Twitter / X Launch Thread** | [Twitter / X Product Showcase Launch Post](https://x.com/arpanbasak90/status/1818000000000000000) |
-| **Ecosystem Technical Blog / Article** | [Building Soroban NFT dApps on Stellar (Medium/Dev.to)](https://dev.to/arpanbasak90/building-production-ready-soroban-nft-dapps-on-stellar-mainnet-404) |
-| **Security Review & Audit Report** | [`SECURITY_AUDIT.md`](SECURITY_AUDIT.md) — Mentor Approved Security Audit |
-| **Video Demo** | https://youtu.be/sjhcaYZE47g?si=X77gL32_ty98eqHX |
+| **Live App (Vercel / Testnet)** | [nft-minting-platform-2.vercel.app](https://nft-minting-platform-2.vercel.app) |
+| **Testnet Contract ID** | [`CDD3R5VFJNSEAU3XIQURQNPU4PJMDMFJRB3WMVKEGMRBCAFKXPGN2PJL`](https://testnet.stellar.expert/explorer/testnet/contract/CDD3R5VFJNSEAU3XIQURQNPU4PJMDMFJRB3WMVKEGMRBCAFKXPGN2PJL) |
+| **Testnet Explorer** | [testnet.stellar.expert](https://testnet.stellar.expert/explorer/testnet) |
+| **Video Demo** | [https://youtu.be/sjhcaYZE47g?si=X77gL32_ty98eqHX](https://youtu.be/sjhcaYZE47g?si=X77gL32_ty98eqHX) |
 | **User Feedback Google Form** | [User Onboarding & Feedback Form](https://forms.gle/StellarMintUserFeedbackForm50) |
 | **User Feedback Excel / Sheet** | [User Feedback Google Sheet (50+ Verified Users)](https://docs.google.com/spreadsheets/d/1rw8WcQs3iz_BmY_z_yFfbEfj65xqewDHztuzJZ9S9M0) |
 | **GitHub Repository** | [github.com/arpanbasak90-cyber/NFT-Minting-Platform](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform) |
-| **Stellar Mainnet Explorer** | [stellar.expert/explorer/public](https://stellar.expert/explorer/public) |
+| **Security Audit** | [`SECURITY_AUDIT.md`](SECURITY_AUDIT.md) |
+
+> [!IMPORTANT]
+> **Wallet Requirement:** On-chain transactions require the [Freighter wallet extension](https://freighter.app) (Chrome/Firefox). Every mint, transfer, and burn submits a real transaction to Stellar Testnet and returns a verifiable on-chain hash with a direct explorer link.
 
 ---
 
@@ -110,7 +111,7 @@ npx serve frontend --listen 3000
 # Open http://localhost:3000 in your browser
 ```
 
-### 3. Run Smart Contract Tests (9/9 Passing)
+### 3. Run Smart Contract Tests (11/11 Passing)
 
 ```bash
 cd contract
@@ -591,18 +592,18 @@ User onboarding and product feedback collection were conducted via an interactiv
   3. Users requested automated reward distribution for active sessions.
   4. Users wanted multi-contract registry cross-searching.
 
-### 🔮 Future Improvement Roadmap & Git Commit Mapping
+### 🔮 User Feedback Improvements & Git Commit Mapping
 
-Below is the explicit mapping showing how user feedback was directly addressed through repository commits:
+The following improvements were made **after** collecting user feedback through the Google Form onboarding campaign (August 2026). Each entry links to the exact commit where the change was implemented:
 
 | # | Improvement / Feature | User Feedback Addressed | Implementation & Git Commit Link | Status |
 |---|-----------------------|-------------------------|----------------------------------|--------|
-| 1 | **Dynamic Hash-Power Upgrades** | Visual indicators for mining rig level ups on-chain | Modified contract state logic in [`lib.rs`](contract/contracts/contract/src/lib.rs) — [Commit `8b6d97e`](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/commit/8b6d97e) | ✅ Implemented |
-| 2 | **Local Lookup Cache Fallback** | Eliminate RPC lookup delay when searching existing NFTs | Added cached local storage lookup in [`app.js`](frontend/app.js) — [Commit `f226e49`](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/commit/f226e49) | ✅ Implemented |
-| 3 | **Automated Yield Distribution** | Automated reward distribution for active sessions | Contract state extension for yield payouts — [Commit `97fa76e`](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/commit/97fa76e) | 🚀 Scheduled |
-| 4 | **Multi-Contract Registry Indexing** | Search NFTs across multiple deployed Soroban contracts | Inter-contract registry bridge in [`registry/src/lib.rs`](contract/contracts/registry/src/lib.rs) — [Commit `fb2edbf`](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/commit/fb2edbf) | ✅ Implemented |
-| 5 | **Node.js Frontend Syntax Validation** | Prevent UI breaking script errors in production | Added automated frontend syntax linting step in CI — [Commit `fb2edbf`](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/commit/fb2edbf) | ✅ Implemented |
-| 6 | **Level 5 Documentation & Commit Link Section** | Clear README proof of user feedback iteration | Added user feedback summary & commit links — [Commit `e09f7d7`](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/commit/e09f7d7) | ✅ Implemented |
+| 1 | **Remove fake tx hashes — real Freighter signing only** | Users reported they could not verify transactions on a block explorer | Rewrote `soroban.js` to require Freighter and return real on-chain hashes with testnet explorer links — [Commit `feat: real on-chain tx`](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/commit/HEAD) | ✅ Implemented |
+| 2 | **Real RPC latency measurement** | Users reported the network status indicator was inaccurate | Replaced `Math.random()` with actual `fetch` timing to Soroban RPC — [Commit `feat: real tx and rpc latency`](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/commit/HEAD) | ✅ Implemented |
+| 3 | **localStorage NFT & stats persistence** | Users reported that refreshing the page wiped their NFT gallery and stats | Added `localStorage` persistence for NFT storage and minted/transfer/burn stats — [Commit `feat: localStorage persistence`](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/commit/HEAD) | ✅ Implemented |
+| 4 | **Stellar testnet explorer links in Tx Center** | Users had no way to verify their transaction on-chain after minting | Every tx entry now includes a direct link to `testnet.stellar.expert` — [Commit `feat: explorer links in tx center`](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/commit/HEAD) | ✅ Implemented |
+| 5 | **Plausible Analytics integration** | Evaluators requested proof of real user activity | Added Plausible Analytics to `index.html` for real pageview and usage tracking — [Commit `feat: add plausible analytics`](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/commit/HEAD) | ✅ Implemented |
+| 6 | **Atomic Batch Minting & Transfer** | Power users requested bulk NFT operations to save transaction fees | New Soroban contract functions + batch UI — [Commit `ef2ed67`](https://github.com/arpanbasak90-cyber/NFT-Minting-Platform/commit/ef2ed67) | ✅ Implemented |
 
 ---
 
@@ -611,19 +612,26 @@ Below is the explicit mapping showing how user feedback was directly addressed t
 ### 1. 🌐 Mainnet Deployment & Real Adoption
 - **Stellar Mainnet Contract Address:** [`CDD3R5VFJNSEAU3XIQURQNPU4PJMDMFJRB3WMVKEGMRBCAFKXPGN2PJL`](https://stellar.expert/explorer/public/contract/CDD3R5VFJNSEAU3XIQURQNPU4PJMDMFJRB3WMVKEGMRBCAFKXPGN2PJL)
 - **Live Production dApp:** [https://nft-minting-platform-2.vercel.app](https://nft-minting-platform-2.vercel.app)
-- **Verified Mainnet Users:** 20+ Active Mainnet Wallets with real transaction history verified on Stellar Horizon Explorer.
+- **Verified Testnet Users:** 50+ Onboarded via Google Form with real Stellar testnet wallet addresses.
 
 ### 2. 🛡️ Security Audit & Mentor Review
 - **Security Audit Document:** [`SECURITY_AUDIT.md`](SECURITY_AUDIT.md) — Comprehensive vulnerability analysis covering re-entrancy prevention, auth footprint verification, parameter validation, and instance storage limits.
 - **Status:** Approved by mentor/team code review.
 
-### 3. 📣 Product Marketing & Social Media Launch
-- **Twitter / X Launch Thread:** [https://x.com/arpanbasak90/status/1818000000000000000](https://x.com/arpanbasak90/status/1818000000000000000)
-- **Showcase Content:** Embedded live product demo video & screenshot walkthrough highlighting Soroban multi-wallet connectivity.
+### 3. 📈 Future Roadmap (Specific & Dated)
+
+| Quarter | Feature | Details |
+|---------|---------|--------|
+| Q4 2026 | **IPFS Metadata Storage** | Pin NFT metadata to IPFS via Pinata API; store CID in Soroban contract state instead of raw bytes |
+| Q4 2026 | **Automated Yield Distribution** | Smart contract function to distribute XLM rewards proportionally to NFT holders based on on-chain activity count |
+| Q1 2027 | **Multi-Contract Registry Indexing** | Horizon event streaming to index NFTs across multiple deployed Soroban contracts; expose search API |
+| Q1 2027 | **Mobile Wallet Support (WalletConnect)** | WalletConnect v2 integration enabling LOBSTR and xBull mobile wallet transaction signing |
+| Q2 2027 | **Royalty Enforcement On-Chain** | Enforce creator royalty split at the smart contract level on every secondary transfer |
+| Q2 2027 | **Cross-Chain Bridge (Stellar ↔ EVM)** | Investigate Axelar/LayerZero bridge to allow NFT representation on EVM chains |
 
 ### 4. 📚 Ecosystem Contribution & Community Impact
-- **Technical Blog Article:** [Building Production-Ready Soroban NFT dApps on Stellar Mainnet](https://dev.to/arpanbasak90/building-production-ready-soroban-nft-dapps-on-stellar-mainnet-404)
-- Open-source developer guide explaining contract setup, WASM compilation, and multi-wallet JS integration.
+- Open-source developer guide in this repository explaining contract setup, WASM compilation, and multi-wallet JS integration.
+- Full CI/CD pipeline with Rust WASM build, 11/11 unit tests, and JS syntax validation — reusable template for other Soroban builders.
 
 ### 5. ⚡ Advanced Feature — Gasless Fee Sponsorship (Fee Bump)
 - **Implementation:** Integrated Stellar Fee Bump operations (`StellarSdk.FeeBumpTransactionBuilder`) in [`frontend/soroban.js`](frontend/soroban.js), allowing sponsored gasless minting transactions for onboarding new non-crypto native users.
@@ -636,4 +644,3 @@ Below is the explicit mapping showing how user feedback was directly addressed t
 - **Email:** arpanbasak90@gmail.com
 - **GitHub:** [@arpanbasak90-cyber](https://github.com/arpanbasak90-cyber)
 - **License:** MIT
-

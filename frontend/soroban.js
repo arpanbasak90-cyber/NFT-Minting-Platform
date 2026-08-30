@@ -17,6 +17,7 @@ const CONTRACT_ID = getValidContractId(DEFAULT_CONTRACT_ID);
 const RPC_URL = "https://soroban-testnet.stellar.org";
 const HORIZON_URL = "https://horizon-testnet.stellar.org";
 const NETWORK_PASSPHRASE = "Test SDF Network ; September 2015";
+const TESTNET_EXPLORER = "https://testnet.stellar.expert/explorer/testnet";
 
 // Initialize Stellar RPC server
 const sorobanServer = window.StellarSdk ? new window.StellarSdk.SorobanRpc.Server(RPC_URL) : null;
@@ -40,11 +41,19 @@ function bytesToHex(uint8Array) {
         .join("");
 }
 
+/**
+ * Returns the Stellar testnet explorer URL for a transaction hash.
+ * This allows reviewers to verify every transaction on-chain.
+ */
+function getExplorerUrl(txHash) {
+    return `${TESTNET_EXPLORER}/tx/${txHash}`;
+}
+
 // Get Freighter API instance from window
 function getFreighterApi() {
     const api = window.freighterApi || window.stellar;
     if (!api) {
-        throw new Error("Freighter wallet extension not detected. Please install Freighter.");
+        throw new Error("Freighter wallet extension not detected. Please install Freighter from https://freighter.app to submit real on-chain transactions.");
     }
     return api;
 }
@@ -119,85 +128,103 @@ async function simulateContractCall(functionName, args = []) {
     return null;
 }
 
-function generateTxHash() {
-    const chars = "0123456789abcdef";
-    let hash = "";
-    for (let i = 0; i < 64; i++) {
-        hash += chars[Math.floor(Math.random() * chars.length)];
-    }
-    return hash;
-}
-
 // ── Mutating Contract Functions (Transaction Lifecycle) ─────────────────
+// NOTE: All mutating functions require Freighter wallet to be installed and connected.
+// No fake/random hashes are generated. Every transaction hash is real and verifiable
+// on the Stellar testnet explorer at https://testnet.stellar.expert
 
 async function executeContractTransaction(functionName, args = []) {
     if (!window.StellarSdk) throw new Error("Stellar SDK not loaded.");
 
-    let api = null;
-    try {
-        api = window.freighterApi || window.stellar;
-    } catch (e) {
-        // ignore
+    const api = window.freighterApi || window.stellar;
+
+    // Require Freighter for on-chain transactions
+    if (!api || typeof api.isConnected !== 'function') {
+        throw new Error(
+            "Freighter wallet is required for on-chain transactions. " +
+            "Please install Freighter from https://freighter.app and refresh the page."
+        );
     }
 
-    if (api && typeof api.isConnected === 'function') {
-        try {
-            const connected = await api.isConnected();
-            if (connected) {
-                const pk = await api.getPublicKey();
-                if (pk) {
-                    console.log(`[Horizon] Loading account sequence for: ${pk}`);
-                    const horizonServer = new window.StellarSdk.Horizon.Server(HORIZON_URL);
-                    const accountSource = await horizonServer.loadAccount(pk);
+    const connected = await api.isConnected();
+    if (!connected) {
+        throw new Error("Freighter is not connected. Please unlock your Freighter wallet and try again.");
+    }
 
-                    const contract = new window.StellarSdk.Contract(CONTRACT_ID);
-                    const operation = contract.call(functionName, ...args);
+    const pk = await api.getPublicKey();
+    if (!pk) {
+        throw new Error("Could not retrieve public key from Freighter. Please ensure your wallet is unlocked.");
+    }
 
-                    console.log("[Soroban] Building initial transaction...");
-                    const tx = new window.StellarSdk.TransactionBuilder(accountSource, {
-                        fee: "10000",
-                        networkPassphrase: NETWORK_PASSPHRASE,
-                    })
-                    .addOperation(operation)
-                    .setTimeout(window.StellarSdk.TimeoutInfinite)
-                    .build();
+    console.log(`[Horizon] Loading account sequence for: ${pk}`);
+    const horizonServer = new window.StellarSdk.Horizon.Server(HORIZON_URL);
+    const accountSource = await horizonServer.loadAccount(pk);
 
-                    console.log(`[Soroban RPC] Simulating transaction for: '${functionName}'...`);
-                    const sim = await sorobanServer.simulateTransaction(tx);
-                    if (window.StellarSdk.SorobanRpc.Api.isSimulationSuccess(sim)) {
-                        console.log("[Soroban] Assembling transaction with simulation footprints...");
-                        const assembledTx = window.StellarSdk.assembleTransaction(tx, sim);
+    const contract = new window.StellarSdk.Contract(CONTRACT_ID);
+    const operation = contract.call(functionName, ...args);
 
-                        console.log("[Freighter] Requesting user transaction signature...");
-                        const signedXdr = await api.signTransaction(assembledTx.toXDR(), {
-                            networkPassphrase: NETWORK_PASSPHRASE,
-                        });
+    console.log("[Soroban] Building initial transaction...");
+    const tx = new window.StellarSdk.TransactionBuilder(accountSource, {
+        fee: "10000",
+        networkPassphrase: NETWORK_PASSPHRASE,
+    })
+    .addOperation(operation)
+    .setTimeout(window.StellarSdk.TimeoutInfinite)
+    .build();
 
-                        console.log("[Soroban RPC] Submitting signed transaction...");
-                        const signedTx = window.StellarSdk.TransactionBuilder.fromXDR(signedXdr, NETWORK_PASSPHRASE);
-                        let submitRes = await sorobanServer.sendTransaction(signedTx);
-                        if (submitRes && submitRes.status !== "ERROR" && submitRes.hash) {
-                            return {
-                                status: "SUCCESS",
-                                hash: submitRes.hash,
-                                result: submitRes.resultMetaXdr
-                            };
-                        }
-                    }
-                }
-            }
-        } catch (err) {
-            console.warn(`[Soroban RPC] Live network execution notice for '${functionName}':`, err.message || err);
+    console.log(`[Soroban RPC] Simulating transaction for: '${functionName}'...`);
+    const sim = await sorobanServer.simulateTransaction(tx);
+
+    if (!window.StellarSdk.SorobanRpc.Api.isSimulationSuccess(sim)) {
+        throw new Error(`Transaction simulation failed for '${functionName}': ${JSON.stringify(sim.error || sim)}`);
+    }
+
+    console.log("[Soroban] Assembling transaction with simulation footprints...");
+    const assembledTx = window.StellarSdk.assembleTransaction(tx, sim);
+
+    console.log("[Freighter] Requesting user transaction signature...");
+    const signedXdr = await api.signTransaction(assembledTx.toXDR(), {
+        networkPassphrase: NETWORK_PASSPHRASE,
+    });
+
+    console.log("[Soroban RPC] Submitting signed transaction...");
+    const signedTx = window.StellarSdk.TransactionBuilder.fromXDR(signedXdr, NETWORK_PASSPHRASE);
+    const submitRes = await sorobanServer.sendTransaction(signedTx);
+
+    if (!submitRes || submitRes.status === "ERROR") {
+        throw new Error(`Transaction submission failed: ${JSON.stringify(submitRes?.errorResult || submitRes)}`);
+    }
+
+    // Poll for confirmation (up to 30 attempts × 2s = 60s timeout)
+    const txHash = submitRes.hash;
+    console.log(`[Soroban RPC] Polling for confirmation. Tx hash: ${txHash}`);
+    console.log(`[Explorer] Track transaction: ${getExplorerUrl(txHash)}`);
+
+    let attempts = 0;
+    while (attempts < 30) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        const txStatus = await sorobanServer.getTransaction(txHash);
+        if (txStatus.status === "SUCCESS") {
+            console.log(`[Soroban] Transaction confirmed! Hash: ${txHash}`);
+            return {
+                status: "SUCCESS",
+                hash: txHash,
+                explorerUrl: getExplorerUrl(txHash),
+                result: txStatus.resultMetaXdr
+            };
         }
+        if (txStatus.status === "FAILED") {
+            throw new Error(`Transaction FAILED on-chain. Hash: ${txHash}. Check explorer: ${getExplorerUrl(txHash)}`);
+        }
+        attempts++;
     }
 
-    // Seamless execution fallback for non-extension wallets (Albedo, xBull, LOBSTR) or dry-run network state
-    console.log(`[Soroban Integration] Transaction '${functionName}' executed successfully.`);
+    // Transaction pending — return hash for user to track
+    console.warn(`[Soroban] Transaction still pending after 60s. Hash: ${txHash}`);
     return {
-        status: "SUCCESS",
-        hash: generateTxHash(),
-        function: functionName,
-        contractId: CONTRACT_ID
+        status: "PENDING",
+        hash: txHash,
+        explorerUrl: getExplorerUrl(txHash)
     };
 }
 
@@ -207,58 +234,39 @@ async function executeContractTransaction(functionName, args = []) {
  * 1. mint(to: Address, token_id: u64, metadata: BytesN<32>, name: String)
  */
 async function mint(to, token_id, metadataHex, name) {
-    try {
-        if (window.StellarSdk) {
-            const args = [
-                window.StellarSdk.Address.fromString(to).toScVal(),
-                window.StellarSdk.nativeToScVal(token_id, { type: "u64" }),
-                window.StellarSdk.xdr.ScVal.scvBytes(hexToBytes(metadataHex)),
-                window.StellarSdk.nativeToScVal(name, { type: "string" })
-            ];
-            return await executeContractTransaction("mint", args);
-        }
-    } catch (e) {
-        console.warn("[SorobanIntegration] mint SDK path skipped:", e.message || e);
-    }
-    // Graceful fallback — succeeds for non-extension wallets or SDK validation errors
-    return { status: "SUCCESS", hash: generateTxHash(), function: "mint", contractId: DEFAULT_CONTRACT_ID };
+    if (!window.StellarSdk) throw new Error("Stellar SDK not loaded.");
+    const args = [
+        window.StellarSdk.Address.fromString(to).toScVal(),
+        window.StellarSdk.nativeToScVal(token_id, { type: "u64" }),
+        window.StellarSdk.xdr.ScVal.scvBytes(hexToBytes(metadataHex)),
+        window.StellarSdk.nativeToScVal(name, { type: "string" })
+    ];
+    return await executeContractTransaction("mint", args);
 }
 
 /**
  * 2. transfer(from: Address, to: Address, token_id: u64)
  */
 async function transfer(from, to, token_id) {
-    try {
-        if (window.StellarSdk) {
-            const args = [
-                window.StellarSdk.Address.fromString(from).toScVal(),
-                window.StellarSdk.Address.fromString(to).toScVal(),
-                window.StellarSdk.nativeToScVal(token_id, { type: "u64" })
-            ];
-            return await executeContractTransaction("transfer", args);
-        }
-    } catch (e) {
-        console.warn("[SorobanIntegration] transfer SDK path skipped:", e.message || e);
-    }
-    return { status: "SUCCESS", hash: generateTxHash(), function: "transfer", contractId: DEFAULT_CONTRACT_ID };
+    if (!window.StellarSdk) throw new Error("Stellar SDK not loaded.");
+    const args = [
+        window.StellarSdk.Address.fromString(from).toScVal(),
+        window.StellarSdk.Address.fromString(to).toScVal(),
+        window.StellarSdk.nativeToScVal(token_id, { type: "u64" })
+    ];
+    return await executeContractTransaction("transfer", args);
 }
 
 /**
  * 3. burn(owner: Address, token_id: u64)
  */
 async function burn(owner, token_id) {
-    try {
-        if (window.StellarSdk) {
-            const args = [
-                window.StellarSdk.Address.fromString(owner).toScVal(),
-                window.StellarSdk.nativeToScVal(token_id, { type: "u64" })
-            ];
-            return await executeContractTransaction("burn", args);
-        }
-    } catch (e) {
-        console.warn("[SorobanIntegration] burn SDK path skipped:", e.message || e);
-    }
-    return { status: "SUCCESS", hash: generateTxHash(), function: "burn", contractId: DEFAULT_CONTRACT_ID };
+    if (!window.StellarSdk) throw new Error("Stellar SDK not loaded.");
+    const args = [
+        window.StellarSdk.Address.fromString(owner).toScVal(),
+        window.StellarSdk.nativeToScVal(token_id, { type: "u64" })
+    ];
+    return await executeContractTransaction("burn", args);
 }
 
 /**
@@ -318,6 +326,25 @@ async function total_supply() {
     return 0;
 }
 
+/**
+ * Measure real RPC latency by timing a lightweight request to Soroban RPC.
+ * Returns latency in milliseconds.
+ */
+async function measureRpcLatency() {
+    const start = performance.now();
+    try {
+        await fetch(RPC_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getHealth' }),
+            signal: AbortSignal.timeout(5000)
+        });
+        return Math.round(performance.now() - start);
+    } catch {
+        return null; // null indicates unreachable
+    }
+}
+
 const SorobanIntegration = {
     connectFreighterWallet,
     checkWalletConnection,
@@ -327,7 +354,10 @@ const SorobanIntegration = {
     get_nft,
     get_owner,
     total_supply,
-    CONTRACT_ID
+    measureRpcLatency,
+    getExplorerUrl,
+    CONTRACT_ID,
+    TESTNET_EXPLORER
 };
 
 if (typeof window !== "undefined") {
