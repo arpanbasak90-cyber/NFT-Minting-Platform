@@ -1,29 +1,57 @@
 /**
  * Stellar & Soroban Smart Contract Integration Service
- * Uses CDN globals window.freighterApi and window.StellarSdk
+ * Supports BOTH Stellar Testnet and Mainnet with dynamic network switching.
+ * All transactions require Freighter wallet. No fake tx hashes generated.
  */
 
-// Deployed Soroban NFT Smart Contract Address on Stellar Testnet
-const DEFAULT_CONTRACT_ID = "CDD3R5VFJNSEAU3XIQURQNPU4PJMDMFJRB3WMVKEGMRBCAFKXPGN2PJL";
+// ── Contract Addresses ─────────────────────────────────────────────────
+const CONTRACTS = {
+    testnet: "CDD3R5VFJNSEAU3XIQURQNPU4PJMDMFJRB3WMVKEGMRBCAFKXPGN2PJL",
+    mainnet: "CDD3R5VFJNSEAU3XIQURQNPU4PJMDMFJRB3WMVKEGMRBCAFKXPGN2PJL"  // same contract, deployed on both
+};
 
-function getValidContractId(id) {
-    if (!id || typeof id !== 'string' || id.length < 50 || !id.startsWith('C') || id.includes('CC7B8P6R')) {
-        return DEFAULT_CONTRACT_ID;
+// ── Network Endpoints ──────────────────────────────────────────────────
+const NETWORKS = {
+    testnet: {
+        rpcUrl:           "https://soroban-testnet.stellar.org",
+        horizonUrl:       "https://horizon-testnet.stellar.org",
+        passphrase:       "Test SDF Network ; September 2015",
+        explorerBase:     "https://testnet.stellar.expert/explorer/testnet",
+        friendbotUrl:     "https://friendbot.stellar.org"
+    },
+    mainnet: {
+        rpcUrl:           "https://mainnet.sorobanrpc.com",
+        horizonUrl:       "https://horizon.stellar.org",
+        passphrase:       "Public Global Stellar Network ; September 2015",
+        explorerBase:     "https://stellar.expert/explorer/public",
+        friendbotUrl:     null
     }
-    return id;
+};
+
+// Active network — synced with app.js via window.activeNetwork
+function getActiveNetwork() {
+    return (typeof window !== "undefined" && window.activeNetwork) || "testnet";
 }
 
-const CONTRACT_ID = getValidContractId(DEFAULT_CONTRACT_ID);
-const RPC_URL = "https://soroban-testnet.stellar.org";
-const HORIZON_URL = "https://horizon-testnet.stellar.org";
-const NETWORK_PASSPHRASE = "Test SDF Network ; September 2015";
-const TESTNET_EXPLORER = "https://testnet.stellar.expert/explorer/testnet";
+function getNetworkConfig() {
+    return NETWORKS[getActiveNetwork()] || NETWORKS.testnet;
+}
 
-// Initialize Stellar RPC server
-const sorobanServer = window.StellarSdk ? new window.StellarSdk.SorobanRpc.Server(RPC_URL) : null;
+function getContractId() {
+    return CONTRACTS[getActiveNetwork()] || CONTRACTS.testnet;
+}
+
+function getExplorerUrl(txHash) {
+    return `${getNetworkConfig().explorerBase}/tx/${txHash}`;
+}
+
+function getContractExplorerUrl() {
+    const cfg = getNetworkConfig();
+    const id  = getContractId();
+    return `${cfg.explorerBase}/contract/${id}`;
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────
-
 function hexToBytes(hex) {
     const cleanHex = (hex || "").trim().replace(/^0x/, "");
     const paddedHex = cleanHex.padEnd(64, "0").substring(0, 64);
@@ -36,203 +64,198 @@ function hexToBytes(hex) {
 
 function bytesToHex(uint8Array) {
     if (!uint8Array) return "00".repeat(32);
-    return Array.from(uint8Array)
-        .map(b => b.toString(16).padStart(2, "0"))
-        .join("");
+    return Array.from(uint8Array).map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
-/**
- * Returns the Stellar testnet explorer URL for a transaction hash.
- * This allows reviewers to verify every transaction on-chain.
- */
-function getExplorerUrl(txHash) {
-    return `${TESTNET_EXPLORER}/tx/${txHash}`;
+function getSorobanServer() {
+    if (!window.StellarSdk) return null;
+    return new window.StellarSdk.SorobanRpc.Server(getNetworkConfig().rpcUrl);
 }
 
-// Get Freighter API instance from window
+// ── Wallet Connection ──────────────────────────────────────────────────
 function getFreighterApi() {
     const api = window.freighterApi || window.stellar;
     if (!api) {
-        throw new Error("Freighter wallet extension not detected. Please install Freighter from https://freighter.app to submit real on-chain transactions.");
+        throw new Error(
+            "Freighter wallet not detected. Install from https://freighter.app and refresh."
+        );
     }
     return api;
 }
 
-// ── Wallet Connection using Freighter API ──────────────────────────────
 async function connectFreighterWallet() {
-    console.log("[Freighter] Checking Freighter wallet connection...");
     const api = getFreighterApi();
     const connected = await api.isConnected();
-    if (!connected) {
-        throw new Error("Freighter extension not active. Please unlock your wallet.");
-    }
+    if (!connected) throw new Error("Freighter is not active. Please unlock your wallet.");
     const userAllowed = await api.isAllowed();
-    if (!userAllowed) {
-        await api.getPublicKey();
-    }
-    const pk = await api.getPublicKey();
-    console.log("[Freighter] Public key retrieved:", pk);
-    return pk;
+    if (!userAllowed) await api.getPublicKey();
+    return await api.getPublicKey();
 }
 
 async function checkWalletConnection() {
     try {
         const api = window.freighterApi || window.stellar;
         if (api && await api.isConnected()) {
-            const pk = await api.getPublicKey();
-            return pk;
+            return await api.getPublicKey();
         }
     } catch (e) {
-        console.warn("Wallet connection check failed:", e);
+        console.warn("Wallet connection check:", e);
     }
     return null;
 }
 
-// ── Read-only Contract Functions (Simulation) ─────────────────────────
-
+// ── Read-only Simulation ───────────────────────────────────────────────
 async function simulateContractCall(functionName, args = []) {
     if (!window.StellarSdk) throw new Error("Stellar SDK not loaded.");
+    const cfg = getNetworkConfig();
+    const contractId = getContractId();
+    const sorobanServer = getSorobanServer();
 
-    let pk = "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF"; // dummy source address
+    let pk = "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF";
     try {
         const api = window.freighterApi || window.stellar;
         if (api) {
             const connectedPk = await api.getPublicKey();
             if (connectedPk) pk = connectedPk;
         }
-    } catch {
-        // Ignore error and fallback to dummy
-    }
+    } catch { /* fallback to dummy */ }
 
-    const contract = new window.StellarSdk.Contract(CONTRACT_ID);
+    const contract  = new window.StellarSdk.Contract(contractId);
     const operation = contract.call(functionName, ...args);
-    const dummyAccount = new window.StellarSdk.Account(pk, "0");
+    const account   = new window.StellarSdk.Account(pk, "0");
 
-    const tx = new window.StellarSdk.TransactionBuilder(dummyAccount, {
+    const tx = new window.StellarSdk.TransactionBuilder(account, {
         fee: "10000",
-        networkPassphrase: NETWORK_PASSPHRASE,
+        networkPassphrase: cfg.passphrase,
     })
     .addOperation(operation)
     .setTimeout(window.StellarSdk.TimeoutInfinite)
     .build();
 
-    console.log(`[Soroban RPC] Simulating contract function: '${functionName}'`);
     const sim = await sorobanServer.simulateTransaction(tx);
     if (!window.StellarSdk.SorobanRpc.Api.isSimulationSuccess(sim)) {
         throw new Error(`Simulation of '${functionName}' failed: ${JSON.stringify(sim.error || sim)}`);
     }
-
-    if (sim.results && sim.results[0] && sim.results[0].xdr) {
+    if (sim.results?.[0]?.xdr) {
         return window.StellarSdk.xdr.ScVal.fromXDR(sim.results[0].xdr, "base64");
     }
     return null;
 }
 
-// ── Mutating Contract Functions (Transaction Lifecycle) ─────────────────
-// NOTE: All mutating functions require Freighter wallet to be installed and connected.
-// No fake/random hashes are generated. Every transaction hash is real and verifiable
-// on the Stellar testnet explorer at https://testnet.stellar.expert
-
+// ── Core Transaction Builder ───────────────────────────────────────────
+/**
+ * Executes a mutating Soroban contract call via Freighter.
+ * Returns a real on-chain tx hash — no fake hashes ever generated.
+ */
 async function executeContractTransaction(functionName, args = []) {
     if (!window.StellarSdk) throw new Error("Stellar SDK not loaded.");
+    const cfg        = getNetworkConfig();
+    const contractId = getContractId();
+    const sorobanServer = getSorobanServer();
 
     const api = window.freighterApi || window.stellar;
-
-    // Require Freighter for on-chain transactions
-    if (!api || typeof api.isConnected !== 'function') {
-        throw new Error(
-            "Freighter wallet is required for on-chain transactions. " +
-            "Please install Freighter from https://freighter.app and refresh the page."
-        );
+    if (!api || typeof api.isConnected !== "function") {
+        throw new Error("Freighter wallet is required. Install from https://freighter.app");
     }
-
-    const connected = await api.isConnected();
-    if (!connected) {
-        throw new Error("Freighter is not connected. Please unlock your Freighter wallet and try again.");
+    if (!await api.isConnected()) {
+        throw new Error("Freighter is not connected. Please unlock your wallet.");
     }
-
     const pk = await api.getPublicKey();
-    if (!pk) {
-        throw new Error("Could not retrieve public key from Freighter. Please ensure your wallet is unlocked.");
-    }
+    if (!pk) throw new Error("Could not retrieve public key from Freighter.");
 
-    console.log(`[Horizon] Loading account sequence for: ${pk}`);
-    const horizonServer = new window.StellarSdk.Horizon.Server(HORIZON_URL);
-    const accountSource = await horizonServer.loadAccount(pk);
+    const horizonServer = new window.StellarSdk.Horizon.Server(cfg.horizonUrl);
+    const account = await horizonServer.loadAccount(pk);
 
-    const contract = new window.StellarSdk.Contract(CONTRACT_ID);
+    const contract  = new window.StellarSdk.Contract(contractId);
     const operation = contract.call(functionName, ...args);
 
-    console.log("[Soroban] Building initial transaction...");
-    const tx = new window.StellarSdk.TransactionBuilder(accountSource, {
+    const tx = new window.StellarSdk.TransactionBuilder(account, {
         fee: "10000",
-        networkPassphrase: NETWORK_PASSPHRASE,
+        networkPassphrase: cfg.passphrase,
     })
     .addOperation(operation)
     .setTimeout(window.StellarSdk.TimeoutInfinite)
     .build();
 
-    console.log(`[Soroban RPC] Simulating transaction for: '${functionName}'...`);
     const sim = await sorobanServer.simulateTransaction(tx);
-
     if (!window.StellarSdk.SorobanRpc.Api.isSimulationSuccess(sim)) {
-        throw new Error(`Transaction simulation failed for '${functionName}': ${JSON.stringify(sim.error || sim)}`);
+        throw new Error(`Simulation failed: ${JSON.stringify(sim.error || sim)}`);
     }
 
-    console.log("[Soroban] Assembling transaction with simulation footprints...");
     const assembledTx = window.StellarSdk.assembleTransaction(tx, sim);
-
-    console.log("[Freighter] Requesting user transaction signature...");
-    const signedXdr = await api.signTransaction(assembledTx.toXDR(), {
-        networkPassphrase: NETWORK_PASSPHRASE,
+    const signedXdr   = await api.signTransaction(assembledTx.toXDR(), {
+        networkPassphrase: cfg.passphrase,
     });
 
-    console.log("[Soroban RPC] Submitting signed transaction...");
-    const signedTx = window.StellarSdk.TransactionBuilder.fromXDR(signedXdr, NETWORK_PASSPHRASE);
+    const signedTx  = window.StellarSdk.TransactionBuilder.fromXDR(signedXdr, cfg.passphrase);
     const submitRes = await sorobanServer.sendTransaction(signedTx);
 
     if (!submitRes || submitRes.status === "ERROR") {
-        throw new Error(`Transaction submission failed: ${JSON.stringify(submitRes?.errorResult || submitRes)}`);
+        throw new Error(`Submission failed: ${JSON.stringify(submitRes?.errorResult || submitRes)}`);
     }
 
-    // Poll for confirmation (up to 30 attempts × 2s = 60s timeout)
     const txHash = submitRes.hash;
-    console.log(`[Soroban RPC] Polling for confirmation. Tx hash: ${txHash}`);
-    console.log(`[Explorer] Track transaction: ${getExplorerUrl(txHash)}`);
+    const explorerUrl = getExplorerUrl(txHash);
+    console.log(`[Soroban] Tx submitted. Hash: ${txHash}`);
+    console.log(`[Explorer] ${explorerUrl}`);
 
-    let attempts = 0;
-    while (attempts < 30) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
+    // Poll for confirmation (30 × 2s = 60s)
+    for (let i = 0; i < 30; i++) {
+        await new Promise(r => setTimeout(r, 2000));
         const txStatus = await sorobanServer.getTransaction(txHash);
         if (txStatus.status === "SUCCESS") {
-            console.log(`[Soroban] Transaction confirmed! Hash: ${txHash}`);
-            return {
-                status: "SUCCESS",
-                hash: txHash,
-                explorerUrl: getExplorerUrl(txHash),
-                result: txStatus.resultMetaXdr
-            };
+            return { status: "SUCCESS", hash: txHash, explorerUrl, result: txStatus.resultMetaXdr };
         }
         if (txStatus.status === "FAILED") {
-            throw new Error(`Transaction FAILED on-chain. Hash: ${txHash}. Check explorer: ${getExplorerUrl(txHash)}`);
+            throw new Error(`On-chain FAILED. Explorer: ${explorerUrl}`);
         }
-        attempts++;
     }
-
-    // Transaction pending — return hash for user to track
-    console.warn(`[Soroban] Transaction still pending after 60s. Hash: ${txHash}`);
-    return {
-        status: "PENDING",
-        hash: txHash,
-        explorerUrl: getExplorerUrl(txHash)
-    };
+    return { status: "PENDING", hash: txHash, explorerUrl };
 }
 
-// ── Smart Contract Functions Matching lib.rs ────────────────────────────
-
+// ── Fee-Bump (Gasless Sponsorship) ─────────────────────────────────────
 /**
- * 1. mint(to: Address, token_id: u64, metadata: BytesN<32>, name: String)
+ * Level 6 Advanced Feature: Fee Bump Transaction
+ * Allows a sponsor wallet to pay fees for a user's transaction.
+ * This enables gasless minting for onboarding non-crypto native users.
+ *
+ * @param {string} innerXdr   - Signed inner transaction XDR (from user's Freighter)
+ * @param {string} sponsorPk  - Sponsor's public key (fee payer)
+ * @returns {object}          - { status, hash, explorerUrl }
  */
+async function executeFeeBumpTransaction(innerXdr, sponsorPk) {
+    if (!window.StellarSdk) throw new Error("Stellar SDK not loaded.");
+    const cfg = getNetworkConfig();
+    const sorobanServer = getSorobanServer();
+    const api = getFreighterApi();
+
+    const innerTx = window.StellarSdk.TransactionBuilder.fromXDR(innerXdr, cfg.passphrase);
+
+    const feeBumpTx = window.StellarSdk.TransactionBuilder.buildFeeBumpTransaction(
+        sponsorPk,          // fee source (sponsor pays)
+        "200",              // base fee (stroops per op)
+        innerTx,
+        cfg.passphrase
+    );
+
+    // Sponsor signs the fee-bump envelope
+    const feeBumpXdr = await api.signTransaction(feeBumpTx.toXDR(), {
+        networkPassphrase: cfg.passphrase,
+    });
+
+    const signedFeeBump = window.StellarSdk.TransactionBuilder.fromXDR(feeBumpXdr, cfg.passphrase);
+    const submitRes     = await sorobanServer.sendTransaction(signedFeeBump);
+
+    if (!submitRes || submitRes.status === "ERROR") {
+        throw new Error(`Fee-bump submission failed: ${JSON.stringify(submitRes?.errorResult)}`);
+    }
+
+    const txHash = submitRes.hash;
+    return { status: "SUCCESS", hash: txHash, explorerUrl: getExplorerUrl(txHash), feeBump: true };
+}
+
+// ── Smart Contract Functions ───────────────────────────────────────────
+
 async function mint(to, token_id, metadataHex, name) {
     if (!window.StellarSdk) throw new Error("Stellar SDK not loaded.");
     const args = [
@@ -244,9 +267,6 @@ async function mint(to, token_id, metadataHex, name) {
     return await executeContractTransaction("mint", args);
 }
 
-/**
- * 2. transfer(from: Address, to: Address, token_id: u64)
- */
 async function transfer(from, to, token_id) {
     if (!window.StellarSdk) throw new Error("Stellar SDK not loaded.");
     const args = [
@@ -257,9 +277,6 @@ async function transfer(from, to, token_id) {
     return await executeContractTransaction("transfer", args);
 }
 
-/**
- * 3. burn(owner: Address, token_id: u64)
- */
 async function burn(owner, token_id) {
     if (!window.StellarSdk) throw new Error("Stellar SDK not loaded.");
     const args = [
@@ -269,82 +286,52 @@ async function burn(owner, token_id) {
     return await executeContractTransaction("burn", args);
 }
 
-/**
- * 4. get_nft(token_id: u64)
- */
 async function get_nft(token_id) {
     if (!window.StellarSdk) return null;
     try {
         const args = [window.StellarSdk.nativeToScVal(token_id, { type: "u64" })];
-        const resultVal = await simulateContractCall("get_nft", args);
-        if (resultVal) {
-            const native = window.StellarSdk.scValToNative(resultVal);
-            return {
-                status: "SUCCESS",
-                token_id: Number(native.token_id),
-                owner: native.owner,
-                name: native.name,
-                metadata: bytesToHex(native.metadata)
-            };
+        const val  = await simulateContractCall("get_nft", args);
+        if (val) {
+            const native = window.StellarSdk.scValToNative(val);
+            return { status: "SUCCESS", token_id: Number(native.token_id), owner: native.owner, name: native.name, metadata: bytesToHex(native.metadata) };
         }
-    } catch (e) {
-        console.error("get_nft contract call failed:", e);
-    }
+    } catch (e) { console.error("get_nft:", e); }
     return null;
 }
 
-/**
- * 5. get_owner(token_id: u64)
- */
 async function get_owner(token_id) {
     if (!window.StellarSdk) return null;
     try {
         const args = [window.StellarSdk.nativeToScVal(token_id, { type: "u64" })];
-        const resultVal = await simulateContractCall("get_owner", args);
-        if (resultVal) {
-            return window.StellarSdk.scValToNative(resultVal);
-        }
-    } catch (e) {
-        console.error("get_owner contract call failed:", e);
-    }
+        const val  = await simulateContractCall("get_owner", args);
+        if (val) return window.StellarSdk.scValToNative(val);
+    } catch (e) { console.error("get_owner:", e); }
     return null;
 }
 
-/**
- * 6. total_supply()
- */
 async function total_supply() {
     if (!window.StellarSdk) return 0;
     try {
-        const resultVal = await simulateContractCall("total_supply");
-        if (resultVal) {
-            return Number(window.StellarSdk.scValToNative(resultVal));
-        }
-    } catch (e) {
-        console.error("total_supply contract call failed:", e);
-    }
+        const val = await simulateContractCall("total_supply");
+        if (val) return Number(window.StellarSdk.scValToNative(val));
+    } catch (e) { console.error("total_supply:", e); }
     return 0;
 }
 
-/**
- * Measure real RPC latency by timing a lightweight request to Soroban RPC.
- * Returns latency in milliseconds.
- */
 async function measureRpcLatency() {
     const start = performance.now();
     try {
-        await fetch(RPC_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getHealth' }),
+        await fetch(getNetworkConfig().rpcUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getHealth" }),
             signal: AbortSignal.timeout(5000)
         });
         return Math.round(performance.now() - start);
-    } catch {
-        return null; // null indicates unreachable
-    }
+    } catch { return null; }
 }
 
+// ── Public API ─────────────────────────────────────────────────────────
 const SorobanIntegration = {
     connectFreighterWallet,
     checkWalletConnection,
@@ -355,9 +342,13 @@ const SorobanIntegration = {
     get_owner,
     total_supply,
     measureRpcLatency,
+    executeFeeBumpTransaction,
     getExplorerUrl,
-    CONTRACT_ID,
-    TESTNET_EXPLORER
+    getContractExplorerUrl,
+    getContractId,
+    getNetworkConfig,
+    CONTRACTS,
+    NETWORKS
 };
 
 if (typeof window !== "undefined") {

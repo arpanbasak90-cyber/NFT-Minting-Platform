@@ -132,29 +132,35 @@ $$('.net-opt').forEach(opt => {
 
 function setNetwork(net) {
     activeNetwork = net;
+    window.activeNetwork = net; // syncs to soroban.js dynamic network selector
+
     const label = net.charAt(0).toUpperCase() + net.slice(1);
     $('netLabel').textContent = label;
     $('rpcNetwork').textContent = label;
     $('anNetwork').textContent = label;
 
-    // Update dot class
     $('netDot').className = `ndot ${net}`;
-
-    // Update dropdown active
     $$('.net-opt').forEach(o => o.classList.toggle('active', o.dataset.net === net));
-
-    // Update settings buttons
     $$('.nt-btn').forEach(b => b.classList.toggle('active', b.dataset.net === net));
 
     simulateRpcLatency();
-    showToast(`Switched to ${label}`, 'info');
-    addLog(`Network changed → ${label}`, 'info');
-    pushNotif(`🌐 Network Changed`, `You are now on ${label}.`);
+    if (walletAddress) fetchXlmBalance(walletAddress);
+
+    const cid = window.SorobanIntegration?.getContractId?.() || '';
+    if ($('contractIdText') && cid) $('contractIdText').textContent = cid;
+
+    const netMsg = net === 'mainnet'
+        ? `🌐 MAINNET — real XLM required`
+        : `🧪 Testnet — free testnet XLM`;
+    showToast(netMsg, net === 'mainnet' ? 'warn' : 'info');
+    addLog(`Network → ${label} | Contract: ${cid.substring(0,12)}...`, 'info');
+    pushNotif(`🌐 Network: ${label}`, net === 'mainnet' ? 'MAINNET active — real XLM required.' : 'Testnet active — safe for testing.');
 }
 
 function setNetFromSettings(btn, net) {
     setNetwork(net);
 }
+
 
 // ── Settings ──────────────────────────────────────────────────────────
 function applyContractSettings() {
