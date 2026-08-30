@@ -9,11 +9,10 @@ on:
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
-  UPDATE_SNAPSHOTS: "true"
 
 jobs:
-  # ── Job 1: Build & Test Smart Contracts ──────────────────────────────────────
-  build-and-test:
+  # ── Job 1: Smart Contract Tests ───────────────────────────────────────────────
+  smart-contract-tests:
     name: Build & Test Smart Contracts
     runs-on: ubuntu-latest
 
@@ -21,21 +20,25 @@ jobs:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🦀 Install Rust & WASM Target
-        uses: dtolnay/rust-toolchain@v1
+      - name: 🦀 Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: 1.84.0
           targets: wasm32-unknown-unknown
 
-      - name: 🔨 Step 1 - Build WASM Contract
+      - name: 📦 Cache Cargo dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ./contract
+
+      - name: ✅ Run Smart Contract Unit Tests
+        working-directory: ./contract
+        run: cargo test --workspace
+
+      - name: 🔨 Build WASM Contracts (release)
         working-directory: ./contract
         run: cargo build --target wasm32-unknown-unknown --release
 
-      - name: ✅ Step 2 - Run Smart Contract Tests
-        working-directory: ./contract
-        run: cargo test --workspace -- --nocapture
-
-      - name: 📤 Upload WASM Artifact
+      - name: 📤 Upload WASM Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: soroban-nft-contracts-wasm
@@ -43,7 +46,7 @@ jobs:
             contract/target/wasm32-unknown-unknown/release/*.wasm
           if-no-files-found: ignore
 
-  # ── Job 2: Frontend Validation & Linting ─────────────────────────────────────
+  # ── Job 2: Frontend Validation ────────────────────────────────────────────────
   frontend-check:
     name: Validate Frontend DApp
     runs-on: ubuntu-latest
@@ -55,17 +58,17 @@ jobs:
       - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
-      - name: 🌐 Verify Frontend Files Structure
+      - name: 🌐 Verify Frontend File Structure
         run: |
-          test -f frontend/index.html && echo "✅ index.html present"
-          test -f frontend/app.js    && echo "✅ app.js present"
-          test -f frontend/soroban.js && echo "✅ soroban.js present"
-          test -f frontend/style.css && echo "✅ style.css present"
+          test -f frontend/index.html  && echo "✅ index.html present"
+          test -f frontend/app.js      && echo "✅ app.js present"
+          test -f frontend/soroban.js  && echo "✅ soroban.js present"
+          test -f frontend/style.css   && echo "✅ style.css present"
 
-      - name: 🔍 Syntax Validation for JavaScript
+      - name: 🔍 JavaScript Syntax Validation
         run: |
           node -c frontend/app.js
           node -c frontend/soroban.js
-          echo "✅ All JavaScript files passed syntax verification!"
+          echo "✅ All JavaScript files passed syntax validation!"
